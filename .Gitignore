@@ -12,3 +12,7 @@
 /AdventOfCode2018.text
 /.vs/AOC2020/v16/TestStore/0
 /.vs
+*.stat
+*.identcache
+/AdventOfCode2020.res
+*.local
