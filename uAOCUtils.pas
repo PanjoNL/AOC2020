@@ -114,7 +114,7 @@ class procedure AOCUtils.DownLoadPuzzleInput(var InputList: TStrings; Const DayI
 var HttpClient: THttpClient;
     lHeader: TNetHeader;
     Headers: TNetHeaders;
-    MemoryStream: TMemoryStream;
+    HttpOutput: IHTTPResponse;
     Url: string;
 begin
   Url := AOCUtils.Config.BaseUrl+'/day/'+DayIndex+'/input';
@@ -124,13 +124,14 @@ begin
   lHeader := LHeader.Create('cookie', AOCUtils.Config.SessionCookie );
   SetLength(Headers, 1);
   Headers[0] := lHeader;
-  MemoryStream := TMemoryStream.Create;
   try
-    HttpClient.Get(Url, MemoryStream, Headers);
-    InputList.LoadFromStream(MemoryStream);
+    HttpOutput := HttpClient.Get(Url, nil, Headers);
+    if HttpOutput.StatusCode = 200 then
+      InputList.LoadFromStream(HttpOutput.ContentStream)
+    else
+      raise Exception.Create(HttpOutput.ContentAsString());
   finally
     HttpClient.Free;
-    MemoryStream.Free;
   end;
 end;
 

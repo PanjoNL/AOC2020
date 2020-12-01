@@ -10,45 +10,54 @@ uses
 
 type
   TAdventOfCodeDay1 = class(TAdventOfCode)
+  private
+    FNumbers: TList<Integer>;
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
-  private
-    function NeededFeul(const Mass: Integer): Integer;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
   end;
 
 implementation
 
-//{$Region 'TAdventOfCodeDay1'}
-function TAdventOfCodeDay1.NeededFeul(const Mass: Integer): Integer;
+{$Region 'TAdventOfCodeDay1'}
+
+procedure TAdventOfCodeDay1.BeforeSolve;
+var s: String;
 begin
-  Result := Trunc(Mass / 3) - 2;
+  FNumbers := TList<Integer>.Create;
+  for s in FInput do
+    FNumbers.Add(StrToInt(s));
+end;
+
+procedure TAdventOfCodeDay1.AfterSolve;
+begin
+  FNumbers.Free;
 end;
 
 function TAdventOfCodeDay1.SolveA: Variant;
-var s: string;
+var i1, i2: Integer;
 begin
   Result := 0;
-  for s in FInput do
-    Result := Result + NeededFeul(StrToInt(s)); //3270717
+  for i1 in FNumbers do
+    for i2 in FNumbers do
+      if i1+i2 = 2020 then
+        Exit(i1*i2); //964875
 end;
 
 function TAdventOfCodeDay1.SolveB: Variant;
-var fuel: Integer;
-    s: string;
+var i1, i2, i3: Integer;
 begin
   Result := 0;
-  for s in FInput do
-  begin
-    fuel := StrToInt(s);
-    while fuel > 6 do
-    begin
-      fuel := NeededFeul(fuel);
-      Result := result + fuel; //4903193
-    end;
-  end;
+  for i1 in FNumbers do
+    for i2 in FNumbers do
+      if i1+i2 < 2020 then //optimization
+        for i3 in FNumbers do
+          if i1+i2+i3 = 2020 then
+            Exit(i1*i2*i3); //241861950
 end;
-//{$ENDREGION}
+{$ENDREGION}
 
 
 initialization
