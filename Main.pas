@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, AOCBase, AOCSolutions, Vcl.ExtCtrls,
-  System.Generics.Collections, uAOCUtils;
+  System.Generics.Collections, uAOCUtils, uAOCTests;
 
 type
   TForm1 = class(TForm)
@@ -52,7 +52,7 @@ end;
 
 procedure TForm1.btnTestClick(Sender: TObject);
 begin
-//  AOCTests.RunTests;
+  AOCTests.RunTests;
 end;
 
 end.

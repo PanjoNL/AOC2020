@@ -44,6 +44,7 @@ type
   end;
 
 function GCD(Number1, Number2: int64): int64;
+function OccurrencesOfChar(const S: string; const C: string): integer;
 
 implementation
 
@@ -208,5 +209,16 @@ begin
 
   result := Number2;
 end;
+
+function OccurrencesOfChar(const S: string; const C: string): integer;
+var
+  i: Integer;
+begin
+  result := 0;
+  for i := 1 to Length(S) do
+    if S[i] = C then
+      inc(result);
+end;
+
 
 end.
