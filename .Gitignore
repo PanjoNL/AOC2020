@@ -16,3 +16,4 @@
 *.identcache
 /AdventOfCode2020.res
 *.local
+/Main.pas.cbk

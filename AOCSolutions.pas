@@ -30,6 +30,29 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay3 = class(TAdventOfCode)
+  private
+    Toboggan: TDictionary<TPosition,Boolean>;
+    TobogganWidth, TobogganHeight: integer;
+    function TraverseToboggan(DeltaX, DeltaY: integer): Int64;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
+
+(*
+  TAdventOfCodeDay? = class(TAdventOfCode)
+  private
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
+*)
+
 implementation
 
 {$Region 'TAdventOfCodeDay1'}
@@ -106,9 +129,86 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay3'}
+function TAdventOfCodeDay3.SolveA: Variant;
+begin
+  Result := TraverseToboggan(3,1); //299
+end;
 
+function TAdventOfCodeDay3.SolveB: Variant;
+begin
+  Result := TraverseToboggan(1,1)
+          * TraverseToboggan(3,1)
+          * TraverseToboggan(5,1)
+          * TraverseToboggan(7,1)
+          * TraverseToboggan(1,2); // 3621285278
+end;
+
+procedure TAdventOfCodeDay3.BeforeSolve;
+var Position: TPosition;
+    x,y: Integer;
+begin
+  Toboggan := TDictionary<TPosition,Boolean>.Create;
+  TobogganWidth := Length(FInput[0]);
+  TobogganHeight := FInput.Count -1;
+  for y := 0 to TobogganHeight do
+    for x := 0 to TobogganWidth do
+    begin
+      Position := Position.SetIt(x,y);
+      Toboggan.Add(Position,  FInput[y][x+1] = '#');
+    end;
+end;
+procedure TAdventOfCodeDay3.AfterSolve;
+begin
+  Toboggan.Free;
+end;
+
+function TAdventOfCodeDay3.TraverseToboggan(DeltaX, DeltaY: integer): Int64;
+Var Position: TPosition;
+begin
+  Result := 0;
+  Position := Position.SetIt(0,0);
+  while Position.y <= TobogganHeight do
+  begin
+    Result := Result + IfThen(Toboggan[Position], 1, 0);
+    Position := Position.AddDelta(DeltaX, DeltaY);
+    Position.x := Position.x mod TobogganWidth
+  end;
+end;
+{$ENDREGION}
+
+
+
+
+
+
+
+(*
+//{$Region 'TAdventOfCodeDay?'}
+procedure TAdventOfCodeDay?.BeforeSolve;
+var s: String;
+begin
+
+end;
+
+procedure TAdventOfCodeDay?.AfterSolve;
+begin
+
+end;
+
+function TAdventOfCodeDay?.SolveA: Variant;
+begin
+
+end;
+
+function TAdventOfCodeDay?.SolveB: Variant;
+begin
+
+end;
+//{$ENDREGION}
+*)
 initialization
-  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2]);
+  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3]);
 
 end.
 
