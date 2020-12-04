@@ -42,8 +42,17 @@ type
     procedure AfterSolve; override;
   end;
 
+  TAdventOfCodeDay4 = class(TAdventOfCode)
+  private
+    function ProcessPassports(Const ValidateData: boolean): Integer;
+    function IsValidPassport(Const ValidateData: boolean; pp: TDictionary<string,string>): Boolean;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 (*
-  TAdventOfCodeDay? = class(TAdventOfCode)
+  TAdventOfCodeDay = class(TAdventOfCode)
   private
   protected
     function SolveA: Variant; override;
@@ -176,39 +185,131 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay4'}
+function TAdventOfCodeDay4.SolveA: Variant;
+begin
+  Result := ProcessPassports(False); //170
+end;
 
+function TAdventOfCodeDay4.SolveB: Variant;
+begin
+  Result := ProcessPassports(True); //103
+end;
 
+function TAdventOfCodeDay4.ProcessPassports(Const ValidateData: boolean): Integer;
+var s, s2: String;
+    CurrentPassport: TDictionary<string,string>;
+    Split, split2: TStringDynArray;
+begin
+  Result := 0;
+
+  CurrentPassport := TDictionary<string,string>.Create;
+
+  for s in FInput do
+  begin
+    Split := SplitString(s, ' ');
+    if Length(split) = 0 then
+    begin
+      if IsValidPassport(ValidateData, CurrentPassport) then
+        Inc(Result);
+      CurrentPassport.Clear
+    end
+    else
+    begin
+      for s2 in split do
+      begin
+        Split2 := SplitString(s2, ':');
+        CurrentPassport.Add(Split2[0], Split2[1]);
+      end;
+    end;
+  end;
+
+  //Check the final password in the file
+  if IsValidPassport(ValidateData, CurrentPassport) then
+    Inc(Result);
+
+  CurrentPassport.Free;
+end;
+
+function TAdventOfCodeDay4.IsValidPassport(Const ValidateData: boolean; pp: TDictionary<string,string>): Boolean;
+
+  function _CheckHcl(aHcl: string): boolean ;
+  var i: Integer;
+  begin
+    Result := aHcl.StartsWith('#') and (Length(aHcl) = 7);
+
+    for i := 2 to 7 do
+      if pos(aHcl[i], 'abcdef1234567890') = 0 then
+        exit(false)
+  end;
+
+  function _CheckEcl(aEcl: string): Boolean;
+  begin
+    Result := (aEcl = 'amb')
+           or (aEcl = 'blu')
+           or (aEcl = 'brn')
+           or (aEcl = 'gry')
+           or (aEcl = 'grn')
+           or (aEcl = 'hzl')
+           or (aEcl = 'oth');
+  end;
+
+var temp: integer;
+begin
+  Result := pp.ContainsKey('byr')
+        and pp.ContainsKey('iyr')
+        and pp.ContainsKey('eyr')
+        and pp.ContainsKey('hgt')
+        and pp.ContainsKey('hcl')
+        and pp.ContainsKey('ecl')
+        and pp.ContainsKey('pid');
+
+  if (Not ValidateData) or (not Result) then
+    Exit;
+
+  Result := ((TryStrToInt(pp['byr'], temp) and (temp >= 1920) and (temp <= 2020))
+        and  (TryStrToInt(pp['iyr'], temp) and (temp >= 2010) and (temp <= 2020))
+        and  (TryStrToInt(pp['eyr'], temp) and (temp >= 2020) and (temp <= 2030))
+        and(
+            (pp['hgt'].EndsWith('cm') and TryStrToInt(LeftStr(pp['hgt'], 3), temp) and (Temp >= 150) and (temp <= 193))
+         or (pp['hgt'].EndsWith('in') and TryStrToInt(LeftStr(pp['hgt'], 2), temp) and (Temp >= 59) and (temp <= 76))
+           )
+        and (_CheckHcl(pp['hcl']))
+        and (_CheckEcl(pp['ecl']))
+        and (Length(pp['pid'])= 9) and (TryStrToInt(pp['pid'], temp)));
+end;
+{$ENDREGION}
 
 
 
 
 
 (*
-//{$Region 'TAdventOfCodeDay?'}
+//{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay?.BeforeSolve;
 var s: String;
 begin
 
 end;
 
-procedure TAdventOfCodeDay?.AfterSolve;
+procedure TAdventOfCodeDay.AfterSolve;
 begin
 
 end;
 
-function TAdventOfCodeDay?.SolveA: Variant;
+function TAdventOfCodeDay.SolveA: Variant;
 begin
 
 end;
 
-function TAdventOfCodeDay?.SolveB: Variant;
+function TAdventOfCodeDay.SolveB: Variant;
 begin
 
 end;
 //{$ENDREGION}
 *)
 initialization
-  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3]);
+  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4]);
 
 end.
 
