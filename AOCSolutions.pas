@@ -51,6 +51,16 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay5 = class(TAdventOfCode)
+  private
+    FSeatIds: TList<Integer>;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
+
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -279,7 +289,50 @@ begin
         and (Length(pp['pid'])= 9) and (TryStrToInt(pp['pid'], temp)));
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay5'}
+procedure TAdventOfCodeDay5.BeforeSolve;
+var s: String;
 
+  function FindValue(Const High: Char; index, stepsize: integer): integer;
+  begin
+    Result := 0;
+    while stepsize > 1 do
+    begin
+      stepsize := Round(Stepsize/2);
+      if s[index] = High then
+        Inc(Result, StepSize);
+      Inc(index);
+    end;
+  end;
+
+begin
+  FSeatIds := TList<integer>.Create;
+  for s in FInput do
+    FSeatIds.Add(FindValue('B', 1, 128) * 8 + FindValue('R', 8, 8));
+end;
+
+procedure TAdventOfCodeDay5.AfterSolve;
+begin
+  FSeatIds.Free;
+end;
+
+function TAdventOfCodeDay5.SolveA: Variant;
+var i: Integer;
+begin
+  Result := 0;
+  for i in FSeatIds do
+    Result := Max(Result, i); //832
+end;
+
+function TAdventOfCodeDay5.SolveB: Variant;
+var i: integer;
+begin
+  Result := 0;
+  for i := 0 to 128*8 do
+    if (not FSeatIds.Contains(i)) and FSeatIds.Contains(i+1) and FSeatIds.Contains(i-1) then
+      exit(i); //517
+end;
+{$ENDREGION}
 
 
 
@@ -309,7 +362,7 @@ end;
 //{$ENDREGION}
 *)
 initialization
-  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4]);
+  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5]);
 
 end.
 
