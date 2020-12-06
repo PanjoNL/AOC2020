@@ -61,6 +61,12 @@ type
     procedure AfterSolve; override;
   end;
 
+  TAdventOfCodeDay6 = class(TAdventOfCode)
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -333,13 +339,72 @@ begin
       exit(i); //517
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay6'}
+function TAdventOfCodeDay6.SolveA: Variant;
+var s: string;
+    Letters: TDictionary<String, boolean>;
+    i: Integer;
+begin
+  Result := 0;
+  Letters := TDictionary<String, boolean>.Create;
+  for s in FInput do
+  begin
+    if s = '' then
+    begin
+      Inc(Result, Letters.Count);
+      Letters.Clear;
+    end
+    else
+      for i := 1 to Length(s) do
+        Letters.AddOrSetValue(s[i], true);
+  end;
 
+  Result := Result + Letters.Count; //6633
+  Letters.Free;
+end;
+
+
+function TAdventOfCodeDay6.SolveB: Variant;
+var Letters: TList<String>;
+
+  procedure _FillLetters;
+  var i: Integer;
+  begin
+    Letters.Clear;
+    for i := Ord('a') to ord('z') do
+      Letters.Add(Chr(i));
+  end;
+
+var s: string;
+    i: Integer;
+begin
+  Result := 0;
+  Letters := TList<String>.Create;
+
+  _FillLetters;
+  for s in FInput do
+  begin
+    if s = '' then
+    begin
+      Inc(Result, Letters.Count);
+      _FillLetters;
+    end
+    else
+      for i := Ord('a') to ord('z') do
+        if Pos(Chr(i),s) = 0 then
+          Letters.Remove(Chr(i));
+  end;
+
+  Result := Result + Letters.Count; //6633
+  Letters.Free;
+end;
+{$ENDREGION}
 
 
 
 (*
 //{$Region 'TAdventOfCodeDay'}
-procedure TAdventOfCodeDay?.BeforeSolve;
+procedure TAdventOfCodeDay.BeforeSolve;
 var s: String;
 begin
 
@@ -362,7 +427,8 @@ end;
 //{$ENDREGION}
 *)
 initialization
-  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5]);
+  RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
+    TAdventOfCodeDay6]);
 
 end.
 
