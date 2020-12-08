@@ -70,11 +70,12 @@ type
   TAdventOfCodeDay7 = class(TAdventOfCode)
   private
     Rules: TAOCDictionary<String, TDictionary<String,Integer>>; 
+    Cache: TDictionary<string,Boolean>;
 
     procedure RuleValueNotify(Sender: TObject; const Item: TDictionary<String,Integer>; Action: TCollectionNotification);
     function CanContainShinyGoldBag(Const aBag: String): Boolean;
     function CountNumberOfBags(Const aBag: String): Integer;
-    Const Shinygold: String = 'shinygold';    
+    Const Shinygold: String = 'shinygold';
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
@@ -428,7 +429,8 @@ Var Split: TStringDynArray;
     s: string; 
     i: Integer;
 begin
-  Rules := TAOCDictionary<String, TDictionary<String,Integer>>.Create(RuleValueNotify); 
+  Rules := TAOCDictionary<String, TDictionary<String,Integer>>.Create(RuleValueNotify);
+  Cache := TDictionary<string,Boolean>.Create;
 
   for s in FInput do
   begin
@@ -452,6 +454,7 @@ end;
 procedure TAdventOfCodeDay7.AfterSolve;
 begin
   Rules.Free;
+  Cache.Free;
 end;
 
 procedure TAdventOfCodeDay7.RuleValueNotify(Sender: TObject; const Item: TDictionary<String,Integer>; Action: TCollectionNotification);
@@ -479,15 +482,23 @@ function TAdventOfCodeDay7.CanContainShinyGoldBag(Const aBag: String): Boolean;
 var Rule: TDictionary<String, Integer>;
     OtherBag: String;
 begin
+  if Cache.TryGetValue(aBag, Result) then
+    Exit;
+
   Rule := Rules[aBag];
 
   Result := False;
   if Rule.ContainsKey(Shinygold) then
-    Exit(True);
-
+    Result := True
+  else
   for OtherBag in Rule.Keys do
     if CanContainShinyGoldBag(OtherBag) then
-      Exit(True);
+    begin
+      Result := True;
+      Break;
+    end;
+
+  Cache.AddOrSetValue(aBag, Result);
 end;
 
 function TAdventOfCodeDay7.CountNumberOfBags(Const aBag: String): Integer;
@@ -549,7 +560,7 @@ begin
     RunInstructions.Free;
   end;
 end;
-//{$ENDREGION}
+{$ENDREGION}
 
 
 (*
