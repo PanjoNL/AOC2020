@@ -81,6 +81,14 @@ type
     procedure BeforeSolve; override;
     procedure AfterSolve; override;
   end;
+
+  TAdventOfCodeDay8 = class(TAdventOfCode)
+  private
+    function RunProgram(const CorruptedLineOfCode: Integer; out Accumulator: Integer): Boolean;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -297,7 +305,7 @@ begin
   if (Not ValidateData) or (not Result) then
     Exit;
 
-  Result := ((TryStrToInt(pp['byr'], temp) and (temp >= 1920) and (temp <= 2020))
+  Result := ((TryStrToInt(pp['byr'], temp) and (temp >= 1920) and (temp <= 2002))
         and  (TryStrToInt(pp['iyr'], temp) and (temp >= 2010) and (temp <= 2020))
         and  (TryStrToInt(pp['eyr'], temp) and (temp >= 2020) and (temp <= 2030))
         and(
@@ -464,8 +472,8 @@ end;
 
 function TAdventOfCodeDay7.SolveB: Variant;
 begin
-  Result := CountNumberOfBags(Shinygold);
-end;
+  Result := CountNumberOfBags(Shinygold); //1250
+end;                                      
 
 function TAdventOfCodeDay7.CanContainShinyGoldBag(Const aBag: String): Boolean;
 var Rule: TDictionary<String, Integer>;
@@ -479,7 +487,7 @@ begin
 
   for OtherBag in Rule.Keys do
     if CanContainShinyGoldBag(OtherBag) then
-      Exit(True); //1250
+      Exit(True);
 end;
 
 function TAdventOfCodeDay7.CountNumberOfBags(Const aBag: String): Integer;
@@ -492,6 +500,57 @@ begin
     Result := Result + Requierment.Value * (1 + CountNumberOfBags(Requierment.Key));
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay8'}
+function TAdventOfCodeDay8.SolveA: Variant;
+var Accumulator: Integer;
+begin
+  RunProgram(-1, Accumulator);
+  Result := Accumulator; //1521
+end;
+
+function TAdventOfCodeDay8.SolveB: Variant;
+var Accumulator, i: Integer;
+begin
+  for i := 0 to FInput.Count-1 do
+    if (Not FInput[i].StartsWith('acc')) and RunProgram(i, Accumulator) then
+      Exit(Accumulator); //1016
+end;
+
+function TAdventOfCodeDay8.RunProgram(const CorruptedLineOfCode: Integer; out Accumulator: Integer): Boolean;
+var InstructionPointer: Integer;
+    Split: TStringDynArray;
+    RunInstructions: TList<Integer>;
+begin
+  Result := False;
+  Accumulator := 0;
+  InstructionPointer := 0;
+  RunInstructions := TList<Integer>.Create;
+  try
+    while (Not RunInstructions.Contains(InstructionPointer)) And Not Result do
+    begin
+      RunInstructions.Add(InstructionPointer);
+      Split := SplitString(FInput[InstructionPointer], ' ');
+
+      if CorruptedLineOfCode = InstructionPointer then
+      case IndexStr(Split[0], ['jmp','nop']) of
+        0: Split[0] := 'nop';
+        1: Split[0] := 'jmp';
+      end;
+
+      Inc(InstructionPointer);
+      case IndexStr(Split[0], ['acc','jmp']) of
+        0: Inc(Accumulator, StrToInt(Split[1]));
+        1: Inc(InstructionPointer, StrToInt(Split[1]) -1);
+      end;
+
+      Result := InstructionPointer >= FInput.Count;
+    end;
+  finally
+    RunInstructions.Free;
+  end;
+end;
+//{$ENDREGION}
+
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -519,7 +578,7 @@ end;
 *)
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
-    TAdventOfCodeDay6,TAdventOfCodeDay7]);
+    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8]);
 
 end.
 
