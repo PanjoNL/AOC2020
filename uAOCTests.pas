@@ -16,7 +16,7 @@ public
   Class procedure RunTests;
 end;
 
-Const AOCTestData: array[0..7] of AOCTest =
+Const AOCTestData: array[0..8] of AOCTest =
 (
  (AOCClass: TAdventOfCodeDay1; ExpectedSolutionA: '964875'; ExpectedSolutionB: '158661360'),
  (AOCClass: TAdventOfCodeDay2; ExpectedSolutionA: '628'; ExpectedSolutionB: '705'),
@@ -25,16 +25,13 @@ Const AOCTestData: array[0..7] of AOCTest =
  (AOCClass: TAdventOfCodeDay5; ExpectedSolutionA: '832'; ExpectedSolutionB: '517'),
  (AOCClass: TAdventOfCodeDay6; ExpectedSolutionA: '6633'; ExpectedSolutionB: '3202'),
  (AOCClass: TAdventOfCodeDay7; ExpectedSolutionA: '115'; ExpectedSolutionB: '1250'),
- (AOCClass: TAdventOfCodeDay8; ExpectedSolutionA: '1521'; ExpectedSolutionB: '1016')
+ (AOCClass: TAdventOfCodeDay8; ExpectedSolutionA: '1521'; ExpectedSolutionB: '1016'),
+ (AOCClass: TAdventOfCodeDay9; ExpectedSolutionA: '138879426'; ExpectedSolutionB: '23761694')
 );
 
 implementation
 
 class procedure AOCTests.RunTests;
-Var Test: AOCTest;
-    AdventOfCode: TAdventOfCode;
-    SolutionA, SolutionB: string;
-    StartTick: Int64;
 
   procedure _Check(const DisplayName, Expected, Actual: String);
   begin
@@ -48,19 +45,24 @@ Var Test: AOCTest;
         WriteLn(Format('PASS, %s', [DisplayName]))
   end;
 
+Var Test: AOCTest;
+    AdventOfCode: TAdventOfCode;
+    SolutionA, SolutionB: string;
+    StartTickTest: Int64;
 begin
+  Writeln('');
   for Test in AOCTestData do
   begin
     Writeln(Format('Running tests for %s', [Test.AOCClass.ClassName]));
 
-    StartTick := GetTickCount;
+    StartTickTest := GetTickCount;
     AdventOfCode := Test.AOCClass.Create;
     AdventOfCode.Test(SolutionA, SolutionB, Test.OverRidenTestInput);
     AdventOfCode.Free;
 
     _Check('Part a', Test.ExpectedSolutionA, SolutionA);
     _Check('Part b', Test.ExpectedSolutionB, SolutionB);
-    Writeln(FormAt('Total ticks %d', [GetTickCount - StartTick]));
+    Writeln(FormAt('Total ticks %d', [GetTickCount - StartTickTest]));
     Writeln('');
   end
 end;

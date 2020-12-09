@@ -90,6 +90,15 @@ type
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
+
+  TAdventOfCodeDay9 = class(TAdventOfCode)
+  private
+    SolutionA: integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -561,7 +570,65 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay9'}
+function TAdventOfCodeDay9.SolveA: Variant; //138879426
+var PreviousNumbers: TDictionary<integer, integer>;
 
+    function _IsValid(Target: integer): Boolean;
+    var i: integer;
+    begin
+      Result := False;
+      for i in PreviousNumbers.Values do
+        if PreviousNumbers.ContainsValue(Target-i) then
+          Exit(True);
+    end;
+
+var i, CurrentNumber: integer;
+begin
+  PreviousNumbers := TDictionary<integer, integer>.Create;
+  try
+    for i := 0 to FInput.Count-1 do
+    begin
+      CurrentNumber := StrToInt(FInput[i]);
+      if i >= 25 then
+      begin
+        if not _IsValid(CurrentNumber) then
+          Exit(CurrentNumber); //138879426
+        PreviousNumbers.Remove(i-25);
+      end;
+
+      PreviousNumbers.Add(i, CurrentNumber);
+    end;
+  finally
+    PreviousNumbers.Free;
+    SolutionA := Result;
+  end;
+end;
+
+function TAdventOfCodeDay9.SolveB: Variant;
+var i, j, SeenMin, SeenMax, Total, CurrentNumber: Integer;
+begin
+  for i := 0 to FInput.Count-1 do
+  begin
+    Total := 0;
+    SeenMax := 0;
+    SeenMin := MaxInt;
+    j := i;
+    while Total < SolutionA do
+    begin
+      CurrentNumber := StrToInt(FInput[j]);
+      Inc(Total, CurrentNumber);
+      SeenMax := Max(SeenMax, CurrentNumber);
+      SeenMin := Min(SeenMin, CurrentNumber);
+
+      if Total = SolutionA then
+        Exit(SeenMin+SeenMax); //23761694
+
+      inc(j);
+    end
+  end;
+end;
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -589,7 +656,7 @@ end;
 *)
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
-    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8]);
+    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9]);
 
 end.
 
