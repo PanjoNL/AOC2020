@@ -127,25 +127,22 @@ begin
 end;
 
 function TAdventOfCodeDay1.SolveA: Variant;
+var i: Integer;
+begin
+  Result := 0;
+  for i in FNumbers do
+    if FNumbers.Contains(2020-i) then
+      Exit(i*(2020-i)); //964875
+end;
+
+function TAdventOfCodeDay1.SolveB: Variant;
 var i1, i2: Integer;
 begin
   Result := 0;
   for i1 in FNumbers do
     for i2 in FNumbers do
-      if i1+i2 = 2020 then
-        Exit(i1*i2); //964875
-end;
-
-function TAdventOfCodeDay1.SolveB: Variant;
-var i1, i2, i3: Integer;
-begin
-  Result := 0;
-  for i1 in FNumbers do
-    for i2 in FNumbers do
-      if i1+i2 < 2020 then //optimization
-        for i3 in FNumbers do
-          if i1+i2+i3 = 2020 then
-            Exit(i1*i2*i3); //158661360
+      if FNumbers.Contains(2020-i1-i2) then
+        Exit(i1*i2*(2020-i1-i2)); //158661360
 end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay2'}
