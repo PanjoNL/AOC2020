@@ -16,7 +16,7 @@ public
   Class procedure RunTests;
 end;
 
-Const AOCTestData: array[0..8] of AOCTest =
+Const AOCTestData: array[0..9] of AOCTest =
 (
  (AOCClass: TAdventOfCodeDay1; ExpectedSolutionA: '964875'; ExpectedSolutionB: '158661360'),
  (AOCClass: TAdventOfCodeDay2; ExpectedSolutionA: '628'; ExpectedSolutionB: '705'),
@@ -26,7 +26,8 @@ Const AOCTestData: array[0..8] of AOCTest =
  (AOCClass: TAdventOfCodeDay6; ExpectedSolutionA: '6633'; ExpectedSolutionB: '3202'),
  (AOCClass: TAdventOfCodeDay7; ExpectedSolutionA: '115'; ExpectedSolutionB: '1250'),
  (AOCClass: TAdventOfCodeDay8; ExpectedSolutionA: '1521'; ExpectedSolutionB: '1016'),
- (AOCClass: TAdventOfCodeDay9; ExpectedSolutionA: '138879426'; ExpectedSolutionB: '23761694')
+ (AOCClass: TAdventOfCodeDay9; ExpectedSolutionA: '138879426'; ExpectedSolutionB: '23761694'),
+ (AOCClass: TAdventOfCodeDay10; ExpectedSolutionA: '2176'; ExpectedSolutionB: '18512297918464')
 );
 
 implementation
@@ -48,9 +49,10 @@ class procedure AOCTests.RunTests;
 Var Test: AOCTest;
     AdventOfCode: TAdventOfCode;
     SolutionA, SolutionB: string;
-    StartTickTest: Int64;
+    StartTickTest, StartTick: Int64;
 begin
   Writeln('');
+  StartTick := GetTickCount;
   for Test in AOCTestData do
   begin
     Writeln(Format('Running tests for %s', [Test.AOCClass.ClassName]));
@@ -64,7 +66,9 @@ begin
     _Check('Part b', Test.ExpectedSolutionB, SolutionB);
     Writeln(FormAt('Total ticks %d', [GetTickCount - StartTickTest]));
     Writeln('');
-  end
+  end;
+
+  Writeln(Format('All tests done in %d ms', [GetTickCount - StartTick]));
 end;
 
 end.

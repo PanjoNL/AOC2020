@@ -99,6 +99,12 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay10 = class(TAdventOfCode)
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -626,6 +632,71 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay'}
+function TAdventOfCodeDay10.SolveA: Variant;
+Var Adapters: TList<Integer>;
+    Jolts, Diff1, Diff3, i: Integer;
+    s: string;
+begin
+  Jolts := 0;
+  Diff1 := 0;
+  Diff3 := 1;
+
+  Adapters := TList<Integer>.Create;
+  try
+    for s in FInput do
+      Adapters.Add(StrToInt(s));
+
+    while Adapters.Count > 0 do
+      for i := 1 to 3 do
+        if Adapters.Contains(Jolts+i) then
+        begin
+          Inc(Jolts, i);
+          Adapters.Remove(Jolts);
+          case i of
+            1: Inc(Diff1);
+            3: Inc(Diff3);
+          end;
+          Break;
+        end;
+  finally
+    Adapters.Free;
+  end;
+
+  Result := Diff1*Diff3
+end;
+
+function TAdventOfCodeDay10.SolveB: Variant;
+Var Adapters: TList<Integer>;
+    Routes: TDictionary<Integer, Int64>;
+    s: string;
+    Adapter: Integer;
+    i1,i2,i3: Int64;
+begin
+  Adapters := TList<Integer>.Create;
+  Routes := TDictionary<Integer, Int64>.Create;
+  try
+    Adapters.Add(0);
+    for s in FInput do
+      Adapters.Add(StrToInt(s));
+
+    Adapters.Sort;
+    Adapters.Reverse;
+    Routes.Add(Adapters.First+3, 1);
+    for Adapter in Adapters do
+    begin
+      Routes.TryGetValue(Adapter+1, i1);
+      Routes.TryGetValue(Adapter+2, i2);
+      Routes.TryGetValue(Adapter+3, i3);
+      Routes.Add(Adapter, i1+i2+i3);
+    end;
+    Result := Routes[0];
+  finally
+    Adapters.Free;
+    Routes.Free;
+  end;
+end;
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -653,7 +724,7 @@ end;
 *)
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
-    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9]);
+    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10]);
 
 end.
 
