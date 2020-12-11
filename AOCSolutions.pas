@@ -107,7 +107,7 @@ type
 
   TAdventOfCodeDay11 = class(TAdventOfCode)
   private
-    function TakeSeats(Const MaxAdjacent: Integer; Const CheckOnlyAdjanentSeats: Boolean): Integer;
+    function TakeSeats(Const MaxAdjacent: Integer; Const UseLineOfSight: Boolean): Integer;
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
@@ -709,92 +709,96 @@ end;
 {$Region 'TAdventOfCodeDay11'}
 function TAdventOfCodeDay11.SolveA: Variant;
 begin
-  Result := TakeSeats(4, True); //2247
+  Result := TakeSeats(4, False); //2247
 end;
 
 function TAdventOfCodeDay11.SolveB: Variant;
 begin
-  Result := TakeSeats(5, False); //2011
+  Result := TakeSeats(5, True); //2011
 end;
 
-function TAdventOfCodeDay11.TakeSeats(Const MaxAdjacent: Integer; Const CheckOnlyAdjanentSeats: Boolean): Integer;
-var Seats: TDictionary<TPoint,Boolean>;
-    Width, Height: Integer;
+type TSeateState = (aNone, aTaken, aFree);
+function TAdventOfCodeDay11.TakeSeats(Const MaxAdjacent: Integer; Const UseLineOfSight: Boolean): Integer;
+var Width, Height: Integer;
+    Seats: Array of array of TSeateState;
 
-  function OutOfRange(aSeat: TPoint): boolean;
+  function OutOfRange(const aX, aY: integer): boolean;
   begin
-    Result := (aSeat.X < 0) or (aSeat.X > width) or (aSeat.y < 0) or (aSeat.y > Height);
+    Result := (aX < 0) or (aX > width) or (aY < 0) or (aY > Height);
   end;
 
-  function _CountadjacentSeats(aSeat: TPoint): Integer;
+  function _CountadjacentSeats(const aX, aY, CutOff: integer): integer;
   Const DeltaX: array[0..7] of Integer = (-1,-1,-1,0,0,1,1,1);
         DeltaY: array[0..7] of Integer = (-1,0,1,-1,1,-1,0,1);
-  var i: integer;
-      b: Boolean;
-      Point: TPoint;
+  var i,x,y: integer;
   begin
     Result := 0;
-
     for i := 0 to Length(DeltaX)-1 do
     begin
-      b := False;
-      Point := TPoint.Create(aSeat);
-      Point.Offset(DeltaX[i],DeltaY[i]);
-      if CheckOnlyAdjanentSeats then
-        Seats.TryGetValue(Point, b)
-      else
-        while (not OutOfRange(Point)) and (not Seats.TryGetValue(Point, b)) do
-          Point.Offset(DeltaX[i],DeltaY[i]);
+      x := aX+DeltaX[i];
+      y := aY+DeltaY[i];
 
-      if b then
+      if UseLineOfSight then
+      while (not OutOfRange(X, Y)) and (Seats[X][Y] = aNone) do
+      begin
+        X := X+DeltaX[i];
+        Y := Y+DeltaY[i];
+      end;
+
+      if not OutOfRange(X, Y) and (Seats[X][Y] = aTaken) then
         Inc(Result);
+
+      if Result > CutOff then
+        Exit;
     end;
   end;
 
-var NewSeats: TDictionary<TPoint,Boolean>;
-    x, y, adjacent: Integer;
-    StateChanged, b: Boolean;
+var x, y: Integer;
     Seat: TPoint;
+    PendingAdd, PendingDelete: TList<TPoint>;
 begin
-  Seats := TDictionary<TPoint,Boolean>.Create;
-  NewSeats := TDictionary<TPoint,Boolean>.Create;
+  PendingAdd := TList<TPoint>.Create;
+  PendingDelete := TList<TPoint>.Create;
+  Result := 0;
   try
     Width := Length(FInput[0]);
     Height := FInput.Count-1;
-
-    for y := 0 to Height do
-      for x := 1 to Width do
-        if FInput[y][x] <> '.' then
-          Seats.Add(TPoint.Create(x-1,y), FInput[y][x] = '#');
-
-    StateChanged := True;
-    while StateChanged do
+    SetLength(Seats, Height);
+    for x := 0 to width do
     begin
-      StateChanged := False;
-      for Seat in Seats.Keys do
-      begin
-        adjacent := _CountadjacentSeats(Seat);
-        if (Seats[Seat] and (adjacent >= MaxAdjacent)) or (not Seats[Seat] and (adjacent = 0)) then
-        begin
-          StateChanged := True;
-          NewSeats.AddOrSetValue(Seat, not Seats[Seat]);
-        end
-        else
-          NewSeats.Add(Seat, Seats[seat]);
+      SetLength(Seats[x], height);
+      for y := 0 to Height do
+      case IndexStr(FInput[y][x+1], ['#', 'L']) of
+        0: Seats[x][y] := aTaken;
+        1: Seats[x][y] := aFree;
+      else
+        Seats[x][y] := aNone
       end;
-
-      Seats.Free;
-      Seats := TDictionary<TPoint,Boolean>.Create(NewSeats);
-      NewSeats.Clear;
     end;
 
-    Result := 0;
-    for b in Seats.Values do
-      if b then
-        Inc(Result);
+    repeat
+      for Seat in PendingAdd do
+        Seats[Seat.X][Seat.Y] := aTaken;
+      for Seat in PendingDelete do
+        Seats[Seat.X][Seat.Y] := aFree;
+
+      Result := Result + PendingAdd.Count - PendingDelete.Count;
+      PendingAdd.Clear;
+      PendingDelete.Clear;
+
+      for y := 0 to Height do
+        for x := 0 to width do
+          Case Seats[x][y] of
+            aTaken: if _CountadjacentSeats(x,y, MaxAdjacent) >= MaxAdjacent then
+                      PendingDelete.Add(TPoint.Create(x,y));
+            aFree:  if _CountadjacentSeats(x,y, 0) = 0 then
+                      PendingAdd.Add(TPoint.Create(x,y))
+          End;
+
+    until ((PendingAdd.Count + PendingDelete.Count) = 0);
   finally
-    Seats.Free;
-    NewSeats.Free;
+    PendingAdd.Free;
+    PendingDelete.Free;
   end;
 end;
 
