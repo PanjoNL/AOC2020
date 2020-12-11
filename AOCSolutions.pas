@@ -105,6 +105,14 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay11 = class(TAdventOfCode)
+  private
+    function TakeSeats(Const MaxAdjacent: Integer; Const CheckOnlyAdjanentSeats: Boolean): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -632,7 +640,7 @@ begin
   end;
 end;
 {$ENDREGION}
-{$Region 'TAdventOfCodeDay'}
+{$Region 'TAdventOfCodeDay10'}
 function TAdventOfCodeDay10.SolveA: Variant;
 Var Adapters: TList<Integer>;
     Jolts, Diff1, Diff3, i: Integer;
@@ -683,6 +691,7 @@ begin
     Adapters.Sort;
     Adapters.Reverse;
     Routes.Add(Adapters.First+3, 1);
+
     for Adapter in Adapters do
     begin
       Routes.TryGetValue(Adapter+1, i1);
@@ -697,7 +706,100 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay11'}
+function TAdventOfCodeDay11.SolveA: Variant;
+begin
+  Result := TakeSeats(4, True); //2247
+end;
 
+function TAdventOfCodeDay11.SolveB: Variant;
+begin
+  Result := TakeSeats(5, False); //2011
+end;
+
+function TAdventOfCodeDay11.TakeSeats(Const MaxAdjacent: Integer; Const CheckOnlyAdjanentSeats: Boolean): Integer;
+var Seats: TDictionary<TPoint,Boolean>;
+    Width, Height: Integer;
+
+  function OutOfRange(aSeat: TPoint): boolean;
+  begin
+    Result := (aSeat.X < 0) or (aSeat.X > width) or (aSeat.y < 0) or (aSeat.y > Height);
+  end;
+
+  function _CountadjacentSeats(aSeat: TPoint): Integer;
+  Const DeltaX: array[0..7] of Integer = (-1,-1,-1,0,0,1,1,1);
+        DeltaY: array[0..7] of Integer = (-1,0,1,-1,1,-1,0,1);
+  var i: integer;
+      b: Boolean;
+      Point: TPoint;
+  begin
+    Result := 0;
+
+    for i := 0 to Length(DeltaX)-1 do
+    begin
+      b := False;
+      Point := TPoint.Create(aSeat);
+      Point.Offset(DeltaX[i],DeltaY[i]);
+      if CheckOnlyAdjanentSeats then
+        Seats.TryGetValue(Point, b)
+      else
+        while (not OutOfRange(Point)) and (not Seats.TryGetValue(Point, b)) do
+          Point.Offset(DeltaX[i],DeltaY[i]);
+
+      if b then
+        Inc(Result);
+    end;
+  end;
+
+var NewSeats: TDictionary<TPoint,Boolean>;
+    x, y, adjacent: Integer;
+    StateChanged, b: Boolean;
+    Seat: TPoint;
+begin
+  Seats := TDictionary<TPoint,Boolean>.Create;
+  NewSeats := TDictionary<TPoint,Boolean>.Create;
+  try
+    Width := Length(FInput[0]);
+    Height := FInput.Count-1;
+
+    for y := 0 to Height do
+      for x := 1 to Width do
+        if FInput[y][x] <> '.' then
+          Seats.Add(TPoint.Create(x-1,y), FInput[y][x] = '#');
+
+    StateChanged := True;
+    while StateChanged do
+    begin
+      StateChanged := False;
+      for Seat in Seats.Keys do
+      begin
+        adjacent := _CountadjacentSeats(Seat);
+        if (Seats[Seat] and (adjacent >= MaxAdjacent)) or (not Seats[Seat] and (adjacent = 0)) then
+        begin
+          StateChanged := True;
+          NewSeats.AddOrSetValue(Seat, not Seats[Seat]);
+        end
+        else
+          NewSeats.Add(Seat, Seats[seat]);
+      end;
+
+      Seats.Free;
+      Seats := TDictionary<TPoint,Boolean>.Create(NewSeats);
+      NewSeats.Clear;
+    end;
+
+    Result := 0;
+    for b in Seats.Values do
+      if b then
+        Inc(Result);
+  finally
+    Seats.Free;
+    NewSeats.Free;
+  end;
+end;
+
+
+//{$ENDREGION}
 (*
 //{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -724,7 +826,8 @@ end;
 *)
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
-    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10]);
+    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
+    TAdventOfCodeDay11]);
 
 end.
 
