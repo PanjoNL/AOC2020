@@ -24,10 +24,11 @@ type TAdventOfCode = class(TPersistent)
     function MakeFilePath(const aFileName: String): string;
     function DayIndex: String;
     procedure DoProcedure(ProcedureToRun: TProcedureToRun; const aDisplayName: String);
-    function DoFunction(FuntionToRun: TFunctionToRun; const aDisplayName: string; Out TicksTaken: Int64): String;
+    function DoFunction(FuntionToRun: TFunctionToRun; const aDisplayName: string; Out MicroSecondsTaken: Int64): String;
     procedure LoadInput;
-    procedure WriteTicksToDebug(Const aFunctionName: string; Const aStartTick: Int64);
+    procedure WriteTimeToDebug(Const aFunctionName: string; Const aTime: Int64);
     procedure InternalSolve(Out SolutionA, SolutionB: string; out TimeA, TimeB: Int64);
+    function QueryPerformanceToMicroSeconds(Const Delta: Int64): Int64;
   public
   { Public declarations }
     procedure Solve;
@@ -93,26 +94,36 @@ begin
   // To be overriden
 end;
 
-procedure TAdventOfCode.WriteTicksToDebug(Const aFunctionName: string; Const aStartTick: Int64);
+function TAdventOfCode.QueryPerformanceToMicroSeconds(Const Delta: Int64): Int64;
+Var Frequency, unitsPerMS: Int64;
 begin
-  Writeln(Format('%s -> TickCount: %d', [aFunctionName, GetTickCount-aStartTick] ));
+  QueryPerformanceFrequency(Frequency);
+  unitsPerMS := Frequency div 1000000;
+  Result := Delta div unitsPerMS
+end;
+
+procedure TAdventOfCode.WriteTimeToDebug(Const aFunctionName: string; Const aTime: Int64);
+begin
+  Writeln(Format('%s -> Time: %d µs', [aFunctionName, aTime] ));
 end;
 
 procedure TAdventOfCode.DoProcedure(ProcedureToRun: TProcedureToRun; const aDisplayName: String);
-var StartTick: Int64;
+var Start, Stop: Int64;
 begin
-  StartTick := GetTickCount;
+  QueryPerformanceCounter(Start);
   ProcedureToRun;
-  WriteTicksToDebug(aDisplayName, StartTick);
+  QueryPerformanceCounter(Stop);
+  WriteTimeToDebug(aDisplayName, QueryPerformanceToMicroSeconds(Stop-Start));
 end;
 
-function TAdventOfCode.DoFunction(FuntionToRun: TFunctionToRun; const aDisplayName: string; Out TicksTaken: Int64): String;
-var StartTick: Int64;
+function TAdventOfCode.DoFunction(FuntionToRun: TFunctionToRun; const aDisplayName: string; Out MicroSecondsTaken: Int64): String;
+var Start, Stop, Total: Int64;
 begin
-  StartTick := GetTickCount;
+  QueryPerformanceCounter(Start);
   Result := VarToStr(FuntionToRun);
-  WriteTicksToDebug(aDisplayName, StartTick);
-  TicksTaken := GetTickCount - StartTick;
+  QueryPerformanceCounter(Stop);
+  MicroSecondsTaken := QueryPerformanceToMicroSeconds(Stop-Start);
+  WriteTimeToDebug(aDisplayName, MicroSecondsTaken);
 end;
 
 procedure TAdventOfCode.LoadInput;
@@ -127,11 +138,7 @@ var FilePath: string;
 begin
   FilePath := InputFilePath;
   if FileExists(FilePath) then
-  begin
-    FInput.LoadFromFile(FilePath);
-    if (FInput.Count > 0) And (FInput[0].StartsWith('Please don')) then
-      _DownLoadInput //File exists, but downloaded to early, let's try again
-  end
+    FInput.LoadFromFile(FilePath)
   else
     _DownLoadInput;
 end;
@@ -145,11 +152,11 @@ begin
 
   TotalTime := GetTickCount - StartTime;
 
-  if (MessageDlg(Format('Solution A: %s Solved in %d  ms.' +#10#13 +
+  if (MessageDlg(Format('Solution A: %s Solved in %d  µs.' +#10#13 +
                  'Copy to clipboard?', [SolutionA, TimeA]), mtInformation, [mbYes, mbNo], 0) <> Ord(mbNo)) then
     Clipboard.AsText := SolutionA;
 
-  if (MessageDlg(Format('Solution B: %s Solved in %d ms.' + #10#13 +
+  if (MessageDlg(Format('Solution B: %s Solved in %d µs.' + #10#13 +
                  'Total execution time: %d ms.' + #10#13 +
                  'Copy to clipboard?', [SolutionB, TimeB, TotalTime]), mtInformation, [mbYes, mbNo], 0) <> Ord(mbNo)) then
     Clipboard.AsText := SolutionB;

@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Generics.Defaults, System.Generics.Collections,
+  Generics.Defaults, System.Generics.Collections,
   system.Diagnostics, AOCBase, RegularExpressions, System.DateUtils, system.StrUtils,
   system.Math, uAOCUtils, system.Types;
 
@@ -833,6 +833,7 @@ begin
       6: Position.Offset(DeltaX[Facing]*Number, DeltaY[Facing]*Number);
     End;
   end;
+
   Result := abs(Position.X) + abs(Position.Y); //1294
 end;
 
