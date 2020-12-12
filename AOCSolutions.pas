@@ -113,6 +113,12 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay12 = class(TAdventOfCode)
+  private
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -446,7 +452,7 @@ end;
 procedure TAdventOfCodeDay7.BeforeSolve;
 Var Split: TStringDynArray;
     Rule: TDictionary<String, Integer>;
-    s: string; 
+    s: string;
     i: Integer;
 begin
   Rules := TAOCDictionary<String, TDictionary<String,Integer>>.Create(RuleValueNotify);
@@ -496,7 +502,7 @@ end;
 function TAdventOfCodeDay7.SolveB: Variant;
 begin
   Result := CountNumberOfBags(Shinygold); //1250
-end;                                      
+end;
 
 function TAdventOfCodeDay7.CanContainShinyGoldBag(Const aBag: String): Boolean;
 var Rule: TDictionary<String, Integer>;
@@ -801,9 +807,72 @@ begin
     PendingDelete.Free;
   end;
 end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay12'}
+type TFacing = (North=0, Easth=1, South=2, West=3);
+function TAdventOfCodeDay12.SolveA: Variant;
+Const DeltaX: array[TFacing] of integer = (1,0,-1,0);
+      DeltaY: array[TFacing] of integer = (0,1,0,-1);
+var Facing: TFacing;
+    Position: TPoint;
+    s: string;
+    Number: Integer;
+begin
+  Facing := Easth;
+  Position := TPoint.Zero;
+  for s in FInput do
+  begin
+    Number := StrToInt(RightStr(s, Length(s)-1));
+    Case IndexStr(LeftStr(s, 1), ['N','E','S','W','L','R','F']) of
+      0: Position.Offset(Number, 0);
+      1: Position.Offset(0, Number);
+      2: Position.Offset(-Number, 0);
+      3: Position.Offset(0, -Number);
+      4: Facing := TFacing((Ord(Facing)+4-Number div 90) mod 4);
+      5: Facing := TFacing((Ord(Facing)+Number div 90) mod 4);
+      6: Position.Offset(DeltaX[Facing]*Number, DeltaY[Facing]*Number);
+    End;
+  end;
+  Result := abs(Position.X) + abs(Position.Y); //1294
+end;
+
+function TAdventOfCodeDay12.SolveB: Variant;
+
+  function _Rotate(point: TPoint; angle: Integer): TPoint;
+  begin
+    case Angle of
+      0:  Result := Point;
+      90: Result := TPoint.Create(-point.Y, point.X);
+      180:Result := TPoint.Create(-point.X, -point.Y);
+      270:Result := TPoint.Create(point.Y, -point.X);
+    end;
+  end;
+
+var Position, Waypoint: TPoint;
+    s: string;
+    Number: Integer;
+begin
+  Position := TPoint.Zero;
+  Waypoint := TPoint.Create(1,10);
+  for s in FInput do
+  begin
+    Number := StrToInt(RightStr(s, Length(s)-1));
+    Case IndexStr(LeftStr(s, 1), ['N','E','S','W','L','R','F']) of
+      0: Waypoint.Offset(Number, 0);
+      1: Waypoint.Offset(0, Number);
+      2: Waypoint.Offset(-Number, 0);
+      3: Waypoint.Offset(0, -Number);
+      4: Waypoint := _Rotate(Waypoint, 360-Number);
+      5: Waypoint := _Rotate(Waypoint, Number)   ;
+      6: Position.Offset(Number*WayPoint.X, Number*Waypoint.Y);
+    end;
+  end;
+
+  Result := abs(Position.X) + abs(Position.Y); //20592
+end;
+{$ENDREGION}
 
 
-//{$ENDREGION}
 (*
 //{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -831,7 +900,7 @@ end;
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
-    TAdventOfCodeDay11]);
+    TAdventOfCodeDay11,TAdventOfCodeDay12]);
 
 end.
 
