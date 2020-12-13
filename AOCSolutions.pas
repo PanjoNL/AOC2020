@@ -119,6 +119,15 @@ type
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
+
+  TAdventOfCodeDay13 = class(TAdventOfCode)
+  private
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -872,7 +881,174 @@ begin
   Result := abs(Position.X) + abs(Position.Y); //20592
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay13'}
+procedure TAdventOfCodeDay13.BeforeSolve;
+var s: String;
+begin
 
+end;
+
+procedure TAdventOfCodeDay13.AfterSolve;
+begin
+
+end;
+
+function TAdventOfCodeDay13.SolveA: Variant;
+Var DepartureTime, MinutesToWait, BusId, WaitTime: int64;
+    Split: TStringDynArray;
+    s: string;
+begin
+  Result := 0;
+  DepartureTime := StrToInt(FInput[0]);
+  Split := SplitString(FInput[1], ',');
+
+  MinutesToWait := MaxInt;
+  for s in split do
+    if TryStrToInt64(s, BusId) then
+    begin
+      WaitTime := BusId - (DepartureTime mod BusId);
+      if WaitTime <= MinutesToWait then
+      begin
+        MinutesToWait := WaitTime;
+        Result := MinutesToWait * BusId;
+      end;
+    end;
+end;
+
+function TAdventOfCodeDay13.SolveB: Variant; //Base on //https://www.dave4math.com/mathematics/chinese-remainder-theorem/
+
+  function Euclidean(x,y: Int64): int64;
+
+  begin
+    Result := 1;
+    while (Result*x Mod y) <> 1 do
+      Inc(Result)
+
+  end;
+
+Var
+  i,N,NMultiplied:Int64;
+  Busses: TDictionary<Int64,Int64>;
+  Bus: TPair<Int64,Int64>;
+  Split: TStringDynArray;
+  s: string;
+begin     //Remainder Mod Multieplier
+  Busses := TDictionary<Int64,Int64>.Create;
+  Split := SplitString(FInput[1],',');
+  i := 0;
+  NMultiplied := 0;
+  for s in split do
+  begin
+    if TryStrToInt64(s, n) then
+    begin
+      Busses.Add(n{Modulo}, n-i{Reminder});
+      NMultiplied := n * IfThen(NMultiplied=0,1,NMultiplied);
+
+//   if NTotal = 0 then
+//        NTotal := n
+//      else
+//        NTotal := NTotal*n
+    end;
+    inc(i);
+  end;
+
+
+  Result := 0;
+  for Bus in Busses do
+  begin
+    Result := Result + (Bus.Value)*Round(NMultiplied/Bus.Key*Euclidean(Round(NMultiplied/Bus.Key), Bus.Key));
+    Result := Result Mod NMultiplied;
+  end;
+
+
+
+
+
+
+//
+//  n:=0;
+//  solved:=false; {just to force 1st time through}
+//  while (not solved) and (n<1000000000000) do
+//  begin
+//    solved:=true; {initialized solved to true}
+//    inc(n); {next N}
+//    for Bus in Busses do
+//    {Test N div D has remainder R}
+//    begin  {we'll quit at first equation not satisfied}
+//      if n mod Bus.Value <> (Bus.Key - Bus.Value) then
+//      begin
+//        solved:=false;
+//        break;
+//      end;
+//    end;
+//  end;
+//
+//  Result := n;
+
+
+
+
+//  n:=0;
+//  solved:=false; {just to force 1st time through}
+//  while (not solved) and (n<1000000000) do
+//  begin
+//    solved:=true; {initialized solved to true}
+//    inc(n); {next N}
+//    for i:=low(dividedby) to high(dividedby) do
+//    {Test N div D has remainder R}
+//    begin  {we'll quit at first equation not satisfied}
+//      if n mod dividedby[i] <> remainders[i] then
+//      begin
+//        solved:=false;
+//        break;
+//      end;
+//    end;
+//  end;
+//
+//  Result := n;
+
+
+//Var DepartureTime, MinutesToWait, BusId, WaitTime, Index, m: int64;
+//    Split: TStringDynArray;
+//    s: string;
+//    Sucses: Boolean;
+//begin
+//  Result := 0;
+//  DepartureTime := StrToInt(FInput[0]);
+//  Split := SplitString(FInput[1], ',');
+//  Index := 0;
+//  Sucses := False;
+//  MinutesToWait := MaxInt;
+//    Index := 0;
+//    M := 0;
+//
+//  while not Sucses do
+//  begin
+//    Inc(m);
+//    Sucses := True;
+//    for s in split do
+//    begin
+//      if TryStrToInt64(s, BusId) then
+//      begin
+//        if ((m*strToInt64(Split[0]) mod BusId)) = Index then
+//          Sucses := False
+//
+//
+//      end;
+//      Inc(Index);
+//    end;
+//
+//    if Sucses then
+//    begin
+//      Result := m*StrToInt64(Split[0]);
+//      Exit
+//    end;
+//  end;
+//
+
+
+end;
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -901,7 +1077,7 @@ end;
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
-    TAdventOfCodeDay11,TAdventOfCodeDay12]);
+    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13]);
 
 end.
 
