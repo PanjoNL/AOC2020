@@ -129,7 +129,17 @@ type
     procedure BeforeSolve; override;
     procedure AfterSolve; override;
   end;
-(*
+
+  TAdventOfCodeDay14 = class(TAdventOfCode)
+  private
+    procedure LoadMaskBits(MaskBits: TDictionary<Integer,Integer>; Const aMask: string);
+    function Power(Const aValue: Integer): Int64;
+    function BitState(Bit, Number: int64): Boolean;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+  (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
   protected
@@ -910,7 +920,6 @@ Var DepartureTime, MinutesToWait, BusId, WaitTime: int64;
 begin
   Result := 0;
   DepartureTime := StrToInt(FInput[0]);
-  Split := SplitString(FInput[1], ',');
 
   MinutesToWait := MaxInt;
   for BusId in Busses.Values do
@@ -948,6 +957,122 @@ begin
     Result := (Result + (Bus.Value-bus.key)*Round(NMultiplied/Bus.Value*Euclidean(Round(NMultiplied/Bus.Value), Bus.Value))) mod NMultiplied;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay14'}
+procedure TAdventOfCodeDay14.LoadMaskBits(MaskBits: TDictionary<Integer,Integer>; Const aMask: string);
+Var Mask: string;
+    i: Integer;
+begin
+  MaskBits.Clear;
+  Mask := Trim(aMask);
+  for i := 1 to Length(Mask) do
+    MaskBits.Add(Length(Mask)-i, IndexStr(Mask[i], ['0', '1']));
+end;
+
+function TAdventOfCodeDay14.BitState(Bit, Number: int64): Boolean;
+begin
+  Result := Odd(Number Shr Bit)
+end;
+
+function TAdventOfCodeDay14.Power(Const aValue: Integer): Int64;
+begin
+  Result := Round(System.Math.Power(2, aValue));
+end;
+
+function TAdventOfCodeDay14.SolveA: Variant;
+var s: string;
+    MaskBits: TDictionary<Integer, Integer>;
+    MaskBit: TPair<Integer, Integer>;
+    Memory: TDictionary<String, int64>;
+    Split: TStringDynArray;
+    Number: Int64;
+begin
+  MaskBits := TDictionary<Integer, Integer>.Create;
+  Memory := TDictionary<String, Int64>.Create;
+
+  try
+    for s in FInput do
+    begin
+      Split := SplitString(s, '=');
+      if s.StartsWith('mask') then
+        LoadMaskBits(MaskBits, Split[1])
+      else
+      begin
+        Number := StrToInt64(Split[1]);
+        for MaskBit in MaskBits do
+        case MaskBit.Value of
+          0: if BitState(MaskBit.Key, Number) then
+              Number := Number - Power(MaskBit.Key);
+          1: if not BitState(MaskBit.Key, Number) then
+              Number := Number + Power(MaskBit.Key);
+        end;
+
+        Memory.AddOrSetValue(Split[0], Number);
+      end;
+    end;
+
+    Result := 0;
+    for Number in Memory.Values do
+      Inc(Result, Number);
+  finally
+    MaskBits.Free;
+    Memory.Free;
+  end;
+end;
+
+function TAdventOfCodeDay14.SolveB: Variant;
+var s: string;
+    MaskBits: TDictionary<Integer, Integer>;
+    MaskBit: TPair<Integer, Integer>;
+    Memory: TDictionary<int64, int64>;
+    Adresses: TList<Int64>;
+    i: Integer;
+    Split: TStringDynArray;
+    Number, adress: Int64;
+begin
+  MaskBits := TDictionary<Integer, Integer>.Create;
+  Memory := TDictionary<int64, Int64>.Create;
+  Adresses := TList<Int64>.Create;
+  try
+    for s in FInput do
+    begin
+      Split := SplitString(s, '=');
+      if s.StartsWith('mask') then
+        LoadMaskBits(MaskBits, Split[1])
+      else
+      begin
+        adress := StrToInt64(Split[0].Replace('mem[','').Replace(']','').Trim);
+
+        for MaskBit in MaskBits do
+          if (MaskBit.Value = 1) and  Not BitState(MaskBit.Key, Adress) then
+            adress := adress + Power(MaskBit.Key);
+
+        Adresses.Clear;
+        Adresses.Add(adress);
+        for MaskBit in MaskBits do
+          if MaskBit.Value = -1 then
+            for i := Adresses.Count-1 downto 0 do
+              if BitState(MaskBit.Key, Adresses[i]) then
+                Adresses.add(Adresses[i] - Power(MaskBit.Key))
+              else
+                Adresses.add(Adresses[i] + Power(MaskBit.Key));
+
+        Number := StrToInt64(Split[1]);
+        for Adress in Adresses do
+          Memory.AddOrSetValue(Adress,  Number);
+      end;
+    end;
+
+    Result := 0;
+    for Number in Memory.Values do
+      Inc(Result, Number);
+  finally
+    MaskBits.Free;
+    Adresses.Free;
+    Memory.Free;
+  end;
+end;
+{$ENDREGION}
+
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -976,7 +1101,7 @@ end;
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
-    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13]);
+    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14]);
 
 end.
 
