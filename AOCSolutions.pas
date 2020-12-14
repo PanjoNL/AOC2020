@@ -133,8 +133,8 @@ type
   TAdventOfCodeDay14 = class(TAdventOfCode)
   private
     procedure LoadMaskBits(MaskBits: TDictionary<Integer,Integer>; Const aMask: string);
-    function Power(Const aValue: Integer): Int64;
-    function BitState(Bit, Number: int64): Boolean;
+    function Power(Const BitIndex: Integer): Int64;
+    function BitState(BitIndex, Number: int64): Boolean;
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
@@ -968,14 +968,14 @@ begin
     MaskBits.Add(Length(Mask)-i, IndexStr(Mask[i], ['0', '1']));
 end;
 
-function TAdventOfCodeDay14.BitState(Bit, Number: int64): Boolean;
+function TAdventOfCodeDay14.BitState(BitIndex, Number: int64): Boolean;
 begin
-  Result := Odd(Number Shr Bit)
+  Result := Odd(Number Shr BitIndex)
 end;
 
-function TAdventOfCodeDay14.Power(Const aValue: Integer): Int64;
+function TAdventOfCodeDay14.Power(Const BitIndex: Integer): Int64;
 begin
-  Result := Round(System.Math.Power(2, aValue));
+  Result := Int64(1) shl BitIndex;
 end;
 
 function TAdventOfCodeDay14.SolveA: Variant;
