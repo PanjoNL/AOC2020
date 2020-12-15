@@ -139,6 +139,15 @@ type
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
+
+  TAdventOfCodeDay15 = class(TAdventOfCode)
+  private
+    function PlayMemoryGame(Const Rounds: Integer): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -1072,7 +1081,47 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay15'}
+function TAdventOfCodeDay15.SolveA: Variant;
+begin
+  Result := PlayMemoryGame(2020);
+end;
 
+function TAdventOfCodeDay15.SolveB: Variant;
+begin
+  Result := PlayMemoryGame(30000000);
+end;
+
+function TAdventOfCodeDay15.PlayMemoryGame(Const Rounds: Integer): Integer;
+Var MostRecentSpoken, PreviousSpoken: Array of integer;
+    i, NumberSpoken, PrevNumber: integer;
+    Split: TStringDynArray;
+begin
+  SetLength(MostRecentSpoken, Rounds);
+  SetLength(PreviousSpoken, Rounds);
+  Split := SplitString(FInput[0],',');
+
+  i := 0;
+  PrevNumber := -1;
+  NumberSpoken := 0;
+  while i < Rounds do
+  begin
+    NumberSpoken := 0;
+    if i < (Length(split)) then //Read from inputfile
+      NumberSpoken := StrToInt(Split[i mod (Length(Split))])
+    else if PreviousSpoken[PrevNumber] > 0 then
+      NumberSpoken := MostRecentSpoken[PrevNumber] - PreviousSpoken[PrevNumber];
+
+    Inc(i);
+    PreviousSpoken[NumberSpoken] := MostRecentSpoken[NumberSpoken];
+    MostRecentSpoken[NumberSpoken] := i;
+    PrevNumber := NumberSpoken
+  end;
+
+  Result := NumberSpoken;
+end;
+
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -1101,7 +1150,7 @@ end;
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
-    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14]);
+    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15]);
 
 end.
 
