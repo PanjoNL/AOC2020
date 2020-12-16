@@ -148,6 +148,29 @@ type
     function SolveB: Variant; override;
   end;
 
+  RRule = record
+    MinValue, MaxValue: Integer;
+  end;
+
+  RTicketRule = record
+    Rules: array of RRule;
+    //Min1, Max1, Min2, Max2: Integer;
+    FieldName: string;
+    class function LoadFromString(Const aString: String): RTicketRule; static;
+    function ValueValid(Const aValue: Integer): Boolean;
+    function IsDepartureField: Boolean;
+  end;
+
+  TAdventOfCodeDay16 = class(TAdventOfCode)
+  private
+    TicketRules: TDictionary<Integer, RTicketRule>;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -1122,6 +1145,163 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay16'}
+class function RTicketRule.LoadFromString(Const aString: String): RTicketRule;
+Var Split1, Split2: TStringDynArray;
+    s: string;
+    i: integer;
+begin
+  Split1 := SplitString(aString, ':');
+  Result.FieldName := Split1[0];
+  Split2 := SplitString(Split1[1], 'or ');
+  SetLength(Result.Rules, Length(Split2));
+  i := 0;
+  for s in Split2 do
+    if s <> '' then
+    begin
+      Split1 := SplitString(s, '-');
+      Result.Rules[i].MinValue := StrToInt(Split1[0]);
+      Result.Rules[i].MaxValue := StrToInt(Split1[1]);
+      Inc(i);
+    end;
+  SetLength(Result.Rules, i);
+end;
+
+function RTicketRule.ValueValid(Const aValue: Integer): Boolean;
+Var Rule: RRule;
+begin
+  Result := False;
+  for Rule in Rules do
+    Result := Result or ((aValue >= Rule.MinValue) and (aValue <= Rule.MaxValue));
+end;
+
+function RTicketRule.IsDepartureField: Boolean;
+begin
+  Result := FieldName.StartsWith('departure')
+end;
+
+procedure TAdventOfCodeDay16.BeforeSolve;
+var i: integer;
+    Rule: RTicketRule;
+begin
+  TicketRules := TDictionary<Integer, RTicketRule>.Create;
+
+  for i := 0 to FInput.Count-1 do
+  begin
+    if FInput[i] = '' then
+      Break;
+
+    Rule := RTicketRule.LoadFromString(FInput[i]);
+    TicketRules.Add(i, Rule);
+  end;
+end;
+
+procedure TAdventOfCodeDay16.AfterSolve;
+begin
+  TicketRules.Free;
+end;
+
+function TAdventOfCodeDay16.SolveA: Variant;
+var i, j: Integer;
+    Rule: RTicketRule;
+    Split: TStringDynArray;
+    s: string;
+begin
+  Result := 0;
+  for i := FInput.IndexOf('nearby tickets:')+1 to FInput.Count-1 do
+  begin
+    Split := SplitString(FInput[i], ',');
+    for s in Split do
+    begin
+      j := StrToInt(s);
+      for Rule in TicketRules.Values do
+        if Rule.ValueValid(j) then
+          j := 0;
+
+      Inc(Result, j);
+    end;
+  end;
+end;
+
+function TAdventOfCodeDay16.SolveB: Variant;
+Var ValidTickets: TList<String>;
+    error, i: integer;
+    Split: TStringDynArray;
+    s: string;
+    Invalid, Valid, ValidForOneRule: Boolean;
+    Rule: RTicketRule;
+    Map: TDictionary<RTicketRule, Integer>;
+    PossibleMatches: TList<Integer>;
+    Match: TPair<RTicketRule, Integer>;
+begin
+  ValidTickets := TList<String>.Create;
+  Map := TDictionary<RTicketRule, Integer>.Create;;
+  PossibleMatches := TList<Integer>.Create;;
+  Result := 1;
+
+  try
+    for i := FInput.IndexOf('nearby tickets:')+1 to FInput.Count-1 do
+    begin
+      Split := SplitString(FInput[i], ',');
+      Invalid := False;
+
+      for s in Split do
+      begin
+        ValidForOneRule := False;
+        for Rule in TicketRules.Values do
+          if Rule.ValueValid(StrToInt(s)) then
+            ValidForOneRule := True; // Todo break?
+
+        if not ValidForOneRule  then
+        begin
+          Invalid := True;
+          break;
+        end;
+      end;
+
+      if not Invalid then
+        ValidTickets.Add(FInput[i]);
+    end;
+
+  while Map.Count <> TicketRules.Count do
+  begin
+    for Rule in TicketRules.Values do
+      if not Map.ContainsKey(Rule) then //Nog niet bepaald
+      begin
+        PossibleMatches.Clear;
+        for i := 0 to TicketRules.Count-1 do
+        begin
+          if Map.ContainsValue(i) then
+            Continue;
+
+          Valid := True;
+          for s in ValidTickets do
+            if  not Rule.ValueValid(StrToInt(SplitString(s,',')[i])) then
+            begin
+              Valid := False;
+              Break;
+            end;
+
+          if Valid then
+            PossibleMatches.Add(i)
+        end;
+
+        if PossibleMatches.Count = 1 then //1 positie over dan is dit de juiste
+          Map.Add(Rule, PossibleMatches.First);
+      end;
+    end;
+
+    Split := SplitString(FInput[FInput.IndexOf('your ticket:')+1],',');
+    for Match in Map do
+      if Match.Key.IsDepartureField then
+        Result := Result * StrToInt(Split[Match.Value]);
+  finally
+    PossibleMatches.Free;
+    ValidTickets.Free;
+    Map.Free;
+  end;
+end;
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -1150,7 +1330,8 @@ end;
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
-    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15]);
+    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
+    TAdventOfCodeDay16]);
 
 end.
 
