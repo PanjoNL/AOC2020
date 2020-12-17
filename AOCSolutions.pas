@@ -171,6 +171,15 @@ type
     procedure AfterSolve; override;
   end;
 
+  ExtendedPoint = record X,Y,Z,W: Integer; end;
+  TAdventOfCodeDay17 = class(TAdventOfCode)
+  private
+    function Simulate(Const FourDimensions: Boolean): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -1225,7 +1234,7 @@ end;
 
 function TAdventOfCodeDay16.SolveB: Variant;
 Var ValidTickets: TList<String>;
-    error, i: integer;
+    i: integer;
     Split: TStringDynArray;
     s: string;
     Invalid, Valid, ValidForOneRule: Boolean;
@@ -1302,7 +1311,109 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay17'}
+function TAdventOfCodeDay17.SolveA: Variant;
+begin
+  Result := Simulate(False);
+end;
 
+function TAdventOfCodeDay17.SolveB: Variant;
+begin
+  Result := Simulate(true);
+end;
+
+function TAdventOfCodeDay17.Simulate( Const FourDimensions: Boolean): Integer;
+Var Grid: TDictionary<ExtendedPoint, Boolean>;
+    Deltas, PendingChanges: TList<ExtendedPoint>;
+    x,y,z,w,i,n,width,height: integer;
+    Point: ExtendedPoint;
+    Val: Boolean;
+
+  function _CountNeighbors(const aPoint: ExtendedPoint): integer;
+  var Point, Delta: ExtendedPoint;
+      Val: Boolean;
+  begin
+    Result := 0;
+    for Delta in Deltas do
+    begin
+      Point.X := aPoint.X + Delta.X;
+      Point.Y := aPoint.Y + Delta.Y;
+      Point.Z := aPoint.Z + Delta.Z;
+      Point.W := aPoint.W + Delta.W;
+      Grid.TryGetValue(Point, Val);
+      if Val then
+        Inc(Result);
+      if Result > 3 then
+        Exit;
+    end;
+  end;
+
+begin
+  Grid := TDictionary<ExtendedPoint, Boolean>.Create;
+  PendingChanges := TList<ExtendedPoint>.Create;
+  Deltas := TList<ExtendedPoint>.Create;
+  for X := -1 to 1 do
+    for Y := -1 to 1 do
+      for Z := -1 to 1 do
+        for W := IfThen(FourDimensions,-1,0) to IfThen(FourDimensions,1,0) do
+        if (X <> 0) or (Y <> 0) or (Z <> 0) or (W <> 0) then
+        begin
+          Point.X := X;
+          Point.Y := Y;
+          Point.Z := Z;
+          Point.W := W;
+          Deltas.Add(Point);
+        end;
+
+  Width := Length(FInput[0]);
+  Height := FInput.Count-1;
+  for X := 0 to width do
+    for Y := 0 to Height do
+    begin
+      Point.X := X;
+      Point.Y := Y;
+      Point.Z := 0;
+      Point.W := 0;
+      Grid.Add(Point, FInput[Y][X+1] = '#' );
+    end;
+
+  for i := 5 downto 0 do
+  begin
+    for X := i-6 to Width+(6-i) do
+      for Y := i-6 to Height+(6-i) do
+        for Z := i-6 to (6-i) do
+          for W := IfThen(FourDimensions,i-6, 0) to IfThen(FourDimensions,6-i,0) do
+          begin
+            Point.X := x;
+            Point.Y := Y;
+            Point.Z := Z;
+            Point.W := W;
+
+            n := _CountNeighbors(Point);
+            Grid.TryGetValue(Point, Val);
+            if (val and not (n in [2,3])) or (not val and (n = 3)) then
+              PendingChanges.Add(Point)
+          end;
+
+    for Point in PendingChanges do
+    begin
+      Grid.TryGetValue(Point, Val);
+      Grid.AddOrSetValue(Point, not val);
+    end;
+    PendingChanges.Clear;
+  end;
+
+  Result := 0;
+  for val in Grid.Values do
+    if Val then
+      Inc(Result);
+
+  Deltas.Free;
+  Grid.Free;
+  PendingChanges.Free;
+end;
+
+{$ENDREGION}
 (*
 //{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -1331,7 +1442,7 @@ initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17]);
 
 end.
 
