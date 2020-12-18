@@ -180,6 +180,18 @@ type
     function SolveB: Variant; override;
   end;
 
+  TMath = function(input: String): Int64 of object;
+  TAdventOfCodeDay18 = class(TAdventOfCode)
+  private
+    function CalulateAllSums(Const Math: TMath): Int64;
+    function CalcuateSum(Const Math: TMath; Formula: string): Int64;
+    function Math(input: String): Int64;
+    function advancedMath(input: String): Int64;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -1414,6 +1426,100 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay18'}
+function TAdventOfCodeDay18.SolveA: Variant;
+begin
+  Result := CalulateAllSums(Math);
+end;
+
+function TAdventOfCodeDay18.SolveB: Variant;
+begin
+  Result := CalulateAllSums(AdvancedMath);
+end;
+
+function TAdventOfCodeDay18.CalulateAllSums(Const Math: TMath): Int64;
+Var s: string;
+begin
+  Result := 0;
+  for s in FInput do
+    Result := Result + CalcuateSum(Math, s);
+end;
+
+function TAdventOfCodeDay18.CalcuateSum(Const Math: TMath; Formula: string): Int64;
+var Index1, Index2: Integer;
+    PartToCalc: string;
+begin
+    Result := 0;
+
+    while Pos('(', Formula) > 0 do
+    begin
+      index2 := Pos(')', Formula);
+      Index1 := 0;
+      repeat
+        Index1 := Pos('(', Formula, Index1+1);
+      until (Pos('(', Formula, Index1+1) > Index2) or (Pos('(', Formula, Index1+1) = 0);
+
+      PartToCalc := Formula.Substring(Index1-1, Index2-Index1+1);
+      Formula := Formula.Replace(PartToCalc, IntToStr(Math(PartToCalc)))
+    end;
+
+    Result := Math(Formula);
+end;
+
+function TAdventOfCodeDay18.Math(input: String): Int64;
+var Split: TStringDynArray;
+    i: Integer;
+begin
+  Input := Input.Replace('(', '').Replace(')','');
+
+  Split := SplitString(Input, ' ');
+  Result := StrToInt64(Split[0]);
+
+  i := 1;
+  while i < Length(Split) do
+  begin
+    case IndexStr(Split[i], ['+', '*']) of
+      0: Result := Result + StrToInt64(Split[i+1]);
+      1: Result := Result * StrToInt64(Split[i+1]);
+    end;
+
+    Inc(i,2);
+  end;
+end;
+
+
+function TAdventOfCodeDay18.AdvancedMath(input: String): Int64;
+var Split: TStringDynArray;
+    i: Integer;
+    NumbersToMultiply: TList<Int64>;
+    n: Int64;
+begin
+  Input := Input.Replace('(', '').Replace(')','');
+  NumbersToMultiply := TList<Int64>.Create;
+  Split := SplitString(Input, ' ');
+
+  i := 0;
+  while i+1 < Length(Split) do
+  begin
+    case IndexStr(Split[i+1], ['+', '*']) of
+      0: Split[i+2] := IntToStr(StrToInt64(Split[i]) + StrToInt64(Split[i+2]));
+      1: NumbersToMultiply.Add(StrToInt64(Split[i]));
+    else
+      Assert(False);
+    end;
+
+    Inc(i,2);
+  end;
+  NumbersToMultiply.Add(StrToInt64(Split[Length(Split)-1]));
+  result := 1;
+  for n in NumbersToMultiply do
+    result := Result * n;
+  NumbersToMultiply.Free;
+end;
+
+{$ENDREGION}
+
+
 (*
 //{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -1442,7 +1548,7 @@ initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16,TAdventOfCodeDay17]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18]);
 
 end.
 
