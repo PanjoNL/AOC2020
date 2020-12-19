@@ -154,7 +154,6 @@ type
 
   RTicketRule = record
     Rules: array of RRule;
-    //Min1, Max1, Min2, Max2: Integer;
     FieldName: string;
     class function LoadFromString(Const aString: String): RTicketRule; static;
     function ValueValid(Const aValue: Integer): Boolean;
@@ -190,6 +189,17 @@ type
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay19 = class(TAdventOfCode)
+  private
+    FRules: TDictionary<Integer, String>;
+    function ParseRule(Const LineNumber: Integer): string;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
   end;
 
   (*
@@ -1449,21 +1459,19 @@ function TAdventOfCodeDay18.CalcuateSum(Const Math: TMath; Formula: string): Int
 var Index1, Index2: Integer;
     PartToCalc: string;
 begin
-    Result := 0;
+  while Pos('(', Formula) > 0 do
+  begin
+    index2 := Pos(')', Formula);
+    Index1 := 0;
+    repeat
+      Index1 := Pos('(', Formula, Index1+1);
+    until (Pos('(', Formula, Index1+1) > Index2) or (Pos('(', Formula, Index1+1) = 0);
 
-    while Pos('(', Formula) > 0 do
-    begin
-      index2 := Pos(')', Formula);
-      Index1 := 0;
-      repeat
-        Index1 := Pos('(', Formula, Index1+1);
-      until (Pos('(', Formula, Index1+1) > Index2) or (Pos('(', Formula, Index1+1) = 0);
+    PartToCalc := Formula.Substring(Index1-1, Index2-Index1+1);
+    Formula := Formula.Replace(PartToCalc, IntToStr(Math(PartToCalc)))
+  end;
 
-      PartToCalc := Formula.Substring(Index1-1, Index2-Index1+1);
-      Formula := Formula.Replace(PartToCalc, IntToStr(Math(PartToCalc)))
-    end;
-
-    Result := Math(Formula);
+  Result := Math(Formula);
 end;
 
 function TAdventOfCodeDay18.Math(input: String): Int64;
@@ -1518,7 +1526,79 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay19'}
+procedure TAdventOfCodeDay19.BeforeSolve;
+var Split: TStringDynArray;
+    s: string;
+begin
+  FRules := TDictionary<Integer,String>.Create;
 
+  for s in FInput do
+  begin
+    if s = '' then
+      Break;
+
+    Split := SplitString(s, ':');
+    FRules.Add(StrToInt(Split[0]), Trim(Split[1]));
+  end;
+end;
+
+procedure TAdventOfCodeDay19.AfterSolve;
+begin
+  FRules.Free;
+end;
+
+function TAdventOfCodeDay19.ParseRule(Const LineNumber: Integer): string;
+var Split: TStringDynArray;
+    i: integer;
+    s: string;
+begin
+  Split := SplitString(FRules[LineNumber], ' ');
+  Result := '(?:';
+  for s in split do
+    if TryStrToInt(s, i) then
+      Result := Result + ParseRule(i)
+    else
+      Result := Result + s.Replace('"','');
+  Result := Result + ')';
+end;
+
+function TAdventOfCodeDay19.SolveA: Variant;
+var i: integer;
+    Regex: TRegEx;
+begin
+  Result := 0;
+  Regex := TRegex.Create('^'+ParseRule(0)+'$', [roCompiled]);
+
+  for i := FInput.IndexOf('')+1 to FInput.Count -1 do
+    if Regex.Match(FInput[i]).Success then
+      Inc(Result);
+end;
+
+function TAdventOfCodeDay19.SolveB: Variant;
+Var s, Rule42, Rule31: String;
+    r1, r2, r3: TRegEx;
+    i: integer;
+begin
+  Rule42 := ParseRule(42);
+  Rule31 := ParseRule(31);
+
+  r1 := TRegex.Create('^('+Rule42+'+)('+Rule31+')+$', [roCompiled]);
+  r2 := TRegex.Create('^('+Rule42+'+)', [roCompiled]);
+  r3 := TRegex.Create('('+Rule31+')+$', [roCompiled]);
+
+  Result := 0;
+  for i := FInput.IndexOf('')+1 to FInput.Count -1 do
+  begin
+    s := FInput[i];
+
+    if r1.Match(s).Success then
+      if r2.Match(s).Length > r3.Match(s).Length  then
+        Inc(Result);
+  end;
+end;
+
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -1548,7 +1628,7 @@ initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19]);
 
 end.
 
