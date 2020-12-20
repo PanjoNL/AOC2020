@@ -202,6 +202,51 @@ type
     procedure AfterSolve; override;
   end;
 
+
+  type TTile = class
+  private
+    FId: Int64;
+    Orientation: Integer;
+    TileData: TDictionary<Integer, TStringList>;
+    AllEdges: TList<String>;
+    Width: Integer;
+    procedure FinishLoading;
+    function RotateTile(Source: TStringList): TStringList;
+    function MirrorTile(Source: TStringList): TStringList;
+    function GetColumn(Const index: Integer): String;
+  public
+    Constructor Create(Const id: Int64); Reintroduce;
+    Destructor Destroy; override;
+
+    procedure AddLine(Const aLine: String);
+    procedure Print;
+    procedure NextOrientation;
+
+    function GetRow(Const Index: Integer): String;
+    function BottomRow: string;
+    function TopRow: string;
+    function LeftColumn: String;
+    function RightColumn: String;
+
+    function ContainsEdge(const aEdge: String): Boolean;
+    function GetTileData: TStringList;
+
+    property Id: int64 read FId;
+  end;
+
+  TAdventOfCodeDay20 = class(TAdventOfCode)
+  private
+    AllTiles: TList<TTile>;
+    OrderdTiles: Array[0..11,0..11] of TTile;
+
+    procedure OrderTiles;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+  end;
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -1599,7 +1644,314 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TTile'}
+Constructor TTile.Create(Const id: Int64);
+Var s: TStringList;
+begin
+  FId := id;
+  Orientation := 0;
+  TileData := TDictionary<Integer, TStringList>.Create;;
+  s := TStringList.Create;
+  TileData.Add(0, s); //Add the start tile
+  AllEdges := TList<String>.Create;
+end;
 
+Destructor TTile.Destroy;
+Var s: TStringList;
+begin
+  for s in TileData.Values do
+    s.Free;
+  TileData.Free;
+  AllEdges.Free;
+end;
+
+procedure TTile.AddLine(Const aLine: String);
+begin
+  TileData[0].Add(aLine);
+
+  if TileData[0].Count = Length(TileData[0][0]) then
+    FinishLoading;
+end;
+
+procedure TTile.FinishLoading;
+var i: integer;
+begin
+  Width := TileData[0].Count;
+  for i := 1 to 3 do
+    TileData.Add(i, RotateTile(TileData[i-1])); //Rotate the previos grid 3 times
+  for i := 4 to 7 do
+    TileData.Add(i, MirrorTile(TileData[i-4])); //Mirror the rotated grids
+
+  for i := 0 to 7 do //chache all the possible edges for this tile
+  begin
+    AllEdges.Add(TopRow);
+    NextOrientation;
+  end;
+end;
+
+function TTile.RotateTile(Source: TStringList): TStringList;
+var i, j: integer;
+    s: string;
+begin
+  Result := TStringList.Create;
+  for i := Source.Count -1 downto 0 do
+    begin
+      s := '';
+      for j := 0 to Source.count -1 do
+        s := s + Source[j][i+1];
+
+      Result.Add(s)
+    end;
+end;
+
+function TTile.MirrorTile(Source: TStringList): TStringList;
+var s: String;
+begin
+  Result := TStringList.Create;
+  for s in source do
+    Result.Add(ReverseString(s));
+end;
+
+procedure TTile.Print;
+var s: string;
+begin
+  for s in GetTileData do
+    Writeln(s);
+end;
+
+procedure TTile.NextOrientation;
+begin
+  Inc(Orientation);
+  if Orientation > 7 then
+    Orientation := 0;
+end;
+
+function TTile.BottomRow: string;
+begin
+  Result := GetRow(Width-1);
+end;
+
+function TTile.TopRow: string;
+begin
+  Result := GetRow(0)
+end;
+
+function TTile.LeftColumn: String;
+begin
+  Result := GetColumn(1)
+end;
+
+function TTile.RightColumn: String;
+begin
+  Result := GetColumn(Width);
+end;
+
+function TTile.GetColumn(Const index: Integer): String;
+var i: Integer;
+begin
+  Result := '';
+  for i := 0 to Width-1 do
+    Result := Result + GetTileData[i][Index];
+end;
+
+function TTile.ContainsEdge(const aEdge: String): Boolean;
+begin
+  Result := AllEdges.Contains(aEdge);
+end;
+
+function TTile.GetRow(Const Index: Integer): String;
+begin
+  Result := GetTileData[Index];
+end;
+
+function TTile.GetTileData;
+begin
+  Assert(TileData.Count = 8, 'Tile not fully loaded');
+  Result := TileData[Orientation];
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay20'}
+procedure TAdventOfCodeDay20.BeforeSolve;
+var s: String;
+    Tile: TTile;
+begin
+  AllTiles := TList<TTile>.Create;
+
+  //Step 1. Load input into a list, this will create all 8 possible oriantations of the tile
+  Tile := nil;
+  for s in FInput do
+    if s.StartsWith('Tile') then
+    begin
+      Tile := TTile.Create(StrToInt64(s.Replace('Tile ', '').Replace(':','')));
+      AllTiles.Add(Tile);
+    end
+    else if s <> '' then
+    begin
+      Assert(Assigned(Tile), 'Tile is nil');
+      Tile.AddLine(s);
+    end;
+
+  //Step 2. Sort the tile's into the correct 12*12 tile wide image
+  OrderTiles;
+end;
+
+procedure TAdventOfCodeDay20.OrderTiles;
+Var UnMatchedTiles: Tlist<TTile>;
+
+  function EdgeInUse(Const aTileId: Int64; Const aEdge: String): boolean;
+  var Tile: TTile;
+  begin
+    Result := False;
+    for Tile in UnMatchedTiles do
+      if Tile.id <> aTileId then
+        if Tile.ContainsEdge(aEdge) then
+          Exit(true);
+  end;
+
+  function FindTile(const Top, Left: String): TTile;
+  var Tile: TTile;
+      i: Integer;
+      MatchTop, MatchLeft: Boolean;
+  begin
+    Result := nil;
+
+    for Tile in UnMatchedTiles do //Search in unmatched tiles for a match
+      for I := 0 to 7 do //Check all 8 orriantations
+      begin
+        MatchTop := Tile.TopRow = Top;
+        MatchLeft := Tile.LeftColumn = Left;
+
+        if Top = '' then //Top is empty, check if the toprow is in use as edge in another thile
+          MatchTop := not EdgeInUse(Tile.Id, Tile.TopRow);
+        if Left = '' then
+          MatchLeft := not EdgeInUse(Tile.Id, Tile.LeftColumn);
+        if MatchLeft and MatchTop then
+          Exit(Tile);
+
+        Tile.NextOrientation;
+      end;
+  end;
+
+var Tile: TTile;
+    Column,Row: Integer;
+    RightEdge, BottomEdge: string;
+begin
+  UnMatchedTiles := TList<TTile>.Create(AllTiles);
+  try
+    for Column := Low(OrderdTiles) to High(OrderdTiles) do //Start in the topleft corner (0,0)
+      for Row := Low(OrderdTiles) to High(OrderdTiles) do
+      begin
+        RightEdge := '';
+        BottomEdge := '';
+
+        if Column > 0 then
+          RightEdge := OrderdTiles[Column-1][Row].RightColumn;
+
+        if Row > 0 then
+          BottomEdge := OrderdTiles[Column][Row-1].BottomRow;
+
+        Tile := FindTile(BottomEdge, RightEdge);
+        assert(Assigned(Tile), 'Tile not found');
+        OrderdTiles[Column][Row] := Tile;
+        UnMatchedTiles.Remove(Tile); //remove tile object from the unmatched collection, so the search doesn't change the oriantation
+
+//        WriteLn('Column:', Column, ' Row:', Row, ' Tile:', Tile.Id);
+//        Tile.Print;
+//        WriteLn('');
+      end;
+  finally
+    UnMatchedTiles.Free;
+  end
+end;
+
+procedure TAdventOfCodeDay20.AfterSolve;
+Var Tile: TTile;
+begin
+  for Tile in AllTiles do
+    Tile.Free;
+  AllTiles.Free;
+end;
+
+function TAdventOfCodeDay20.SolveA: Variant;
+begin
+  Result := OrderdTiles[0,0].Id * OrderdTiles[0,11].Id * OrderdTiles[11,0].Id * OrderdTiles[11,11].Id;
+end;
+
+function TAdventOfCodeDay20.SolveB: Variant;
+Const SeaMonsterOffsetRow: array[0..14] of integer = (0,1,1,1,1,1,1,1,1,2,2,2,2,2,2);
+      SeaMonsterOffsetColumn: array[0..14] of integer= (18,0,5,6,11,12,17,18,19,1,4,7,10,13,16);
+Var
+    s: string;
+    SeaMonsterCount, MaxSeaMonsters, roughness, i, j, Column, Row: integer;
+    TileData, CompleteImage: TStringList;
+    Tile, CompleteTile: TTile;
+    IsSeamonster: Boolean;
+begin
+  CompleteImage := TStringList.Create;
+  CompleteTile := TTile.Create(1);
+  try
+    //From the orderd and correct orrianted tilews build one complete inputlist
+    for Column := Low(OrderdTiles) to High(OrderdTiles) do
+      for Row := Low(OrderdTiles) to High(OrderdTiles) do
+        begin
+          Tile := OrderdTiles[Column][Row];
+          for i := 1 to 8 do
+          begin
+            s := Tile.GetRow(i).Substring(1,8);
+            if Column = 0 then
+              CompleteImage.Add(s)
+            else
+              CompleteImage[Row*8+i-1] := CompleteImage[Row*8+i-1] + s
+          end;
+        end;
+
+    //Add data to tile
+    for s in CompleteImage do
+      CompleteTile.AddLine(s);
+//    CompleteTile.Print;
+
+    MaxSeaMonsters := 0;
+    for i := 0 to 7 do
+    begin
+      TileData := CompleteTile.GetTileData;
+      SeaMonsterCount := 0;
+
+      for Column := 0 to TileData.Count-20 do
+        for Row := 0 to TileData.Count-4 do
+        begin
+          IsSeamonster := True;
+
+          for j := 0 to High(SeaMonsterOffsetRow) do
+          begin
+            if TileData[Row+SeaMonsterOffsetRow[j]][Column+SeaMonsterOffsetColumn[j]] = '.' then
+              IsSeamonster := False;
+
+            if not IsSeamonster then
+              Break;
+          end;
+
+          if IsSeamonster then
+            Inc(SeaMonsterCount);
+        end;
+
+        MaxSeaMonsters := Max(MaxSeaMonsters, SeaMonsterCount);
+        CompleteTile.NextOrientation;
+//    writeLn('');
+//    WriteLn('Itteration: ', i);
+//    CompleteTile.print;
+    end;
+
+    roughness := 0;
+    for s in CompleteImage do
+      roughness := roughness + OccurrencesOfChar(s, '#');
+
+    Result := roughness - MaxSeaMonsters*15;
+  finally
+    CompleteImage.Free;
+    CompleteTile.Free;
+  end;
+end;
+{$ENDREGION}
 (*
 //{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -1628,7 +1980,7 @@ initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20]);
 
 end.
 

@@ -117,7 +117,7 @@ begin
 end;
 
 function TAdventOfCode.DoFunction(FuntionToRun: TFunctionToRun; const aDisplayName: string; Out MicroSecondsTaken: Int64): String;
-var Start, Stop, Total: Int64;
+var Start, Stop: Int64;
 begin
   QueryPerformanceCounter(Start);
   Result := VarToStr(FuntionToRun);
