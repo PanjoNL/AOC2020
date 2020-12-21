@@ -69,7 +69,7 @@ type
 
   TAdventOfCodeDay7 = class(TAdventOfCode)
   private
-    Rules: TAOCDictionary<String, TDictionary<String,Integer>>; 
+    Rules: TAOCDictionary<String, TDictionary<String,Integer>>;
     Cache: TDictionary<string,Boolean>;
 
     procedure RuleValueNotify(Sender: TObject; const Item: TDictionary<String,Integer>; Action: TCollectionNotification);
@@ -202,7 +202,6 @@ type
     procedure AfterSolve; override;
   end;
 
-
   type TTile = class
   private
     FId: Int64;
@@ -245,6 +244,14 @@ type
     function SolveB: Variant; override;
     procedure BeforeSolve; override;
     procedure AfterSolve; override;
+  end;
+
+  TAdventOfCodeDay21 = class(TAdventOfCode)
+  private
+     procedure Freevalue(Sender: TObject; const Item: TList<String>; Action: TCollectionNotification);
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
   end;
 
   (*
@@ -1733,12 +1740,12 @@ end;
 
 function TTile.TopRow: string;
 begin
-  Result := GetRow(0)
+  Result := GetRow(0);
 end;
 
 function TTile.LeftColumn: String;
 begin
-  Result := GetColumn(1)
+  Result := GetColumn(1);
 end;
 
 function TTile.RightColumn: String;
@@ -1952,6 +1959,144 @@ begin
   end;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay21'}
+function TAdventOfCodeDay21.SolveA: Variant;
+var PossibleMatches: TAOCDictionary<String, TList<String>>;
+    IngredientCount: TDictionary<string, Integer>;
+    Ingredients, Allergens: TList<String>;
+    s, s2: string;
+    Split, split2: TStringDynArray;
+    val, i: Integer;
+    pair: TPair<string, integer>;
+begin
+  PossibleMatches := TAOCDictionary<String, TList<String>>.Create(Freevalue);
+  IngredientCount := TDictionary<string, Integer>.Create;
+  Ingredients := TList<String>.Create;
+
+  for s in FInput do
+  begin
+    Ingredients.Clear;
+
+    Split := SplitString(s, '(');
+    Split2 := SplitString(Split[0], ' ');
+    for s2 in Split2 do
+      if s2 <> '' then
+      begin
+        Ingredients.Add(s2);
+        IngredientCount.TryGetValue(s2, val);
+        IngredientCount.AddOrSetValue(s2, val+1);
+      end;
+
+    Split2 := SplitString(Split[1].Replace(')',''), ', ');
+    for s2 in Split2 do
+      if (s2 <> '') and (s2 <> 'contains') then
+      begin
+        if PossibleMatches.TryGetValue(s2, Allergens) then
+        begin
+          for i := Allergens.Count-1 downto 0 do
+            if not Ingredients.Contains(Allergens[i]) then
+              Allergens.Remove(Allergens[i]);
+        end
+        else
+        begin
+          Allergens := TList<String>.Create(Ingredients);
+          PossibleMatches.Add(s2, Allergens);
+        end;
+      end;
+  end;
+  Ingredients.Free;
+
+  Allergens := TList<String>.Create;
+  for Ingredients in PossibleMatches.Values do
+    for s in Ingredients do
+      if Not Allergens.Contains(s) then
+        Allergens.Add(s);
+
+  Result := 0;
+  for Pair in IngredientCount do
+    if not Allergens.Contains(pair.Key) then
+      Inc(Result, pair.Value);
+
+  Allergens.Free;
+  IngredientCount.Free;
+  PossibleMatches.Free;
+end;
+
+function TAdventOfCodeDay21.SolveB: Variant;
+var PossibleMatches: TAOCDictionary<String, TList<String>>;
+    Ingredients, Allergens: TList<String>;
+    s, s2: string;
+    Split, split2: TStringDynArray;
+    val, i: Integer;
+    Run: Boolean;
+    Keys: TArray<String>;
+begin
+  PossibleMatches := TAOCDictionary<String, TList<String>>.Create(Freevalue);
+  Ingredients := TList<String>.Create;
+
+  for s in FInput do
+  begin
+    Ingredients.Clear;
+
+    Split := SplitString(s, '(');
+    Split2 := SplitString(Split[0], ' ');
+    for s2 in Split2 do
+      if s2 <> '' then
+        Ingredients.Add(s2);
+
+    Split2 := SplitString(Split[1].Replace(')',''), ', ');
+    for s2 in Split2 do
+      if (s2 <> '') and (s2 <> 'contains') then
+      begin
+        if PossibleMatches.TryGetValue(s2, Allergens) then
+        begin
+          for i := Allergens.Count-1 downto 0 do
+            if not Ingredients.Contains(Allergens[i]) then
+              Allergens.Remove(Allergens[i]);
+        end
+        else
+        begin
+          Allergens := TList<String>.Create(Ingredients);
+          PossibleMatches.Add(s2, Allergens);
+        end;
+      end;
+  end;
+  Ingredients.Free;
+
+  Run := True;
+  while Run do
+  begin
+    Run := False;
+
+    for s in PossibleMatches.Keys do
+    begin
+      Allergens := PossibleMatches[s];
+      if Allergens.Count <> 1 then //One match left, remove this ingredient form all other lists
+        Run := True
+      else
+        for s2 in PossibleMatches.Keys do
+          if s2 <> s then
+            PossibleMatches[s2].Remove(Allergens.First);
+    end;
+  end;
+
+  Keys := PossibleMatches.Keys.ToArray;
+  TArray.Sort<string>(Keys);
+  Result := '';
+  for s in Keys do
+    Result := Result + IfThen(Result='','',',')+PossibleMatches[s].First;
+
+  PossibleMatches.Free;
+end;
+
+procedure TAdventOfCodeDay21.Freevalue(Sender: TObject; const Item: TList<String>; Action: TCollectionNotification);
+begin
+  if (Action = cnRemoved) then
+    Item.Free;
+end;
+
+{$ENDREGION}
+
 (*
 //{$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -1980,7 +2125,8 @@ initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
+    TAdventOfCodeDay21]);
 
 end.
 
