@@ -40,7 +40,7 @@ begin
   end;
   cbb1.ItemIndex := cbb1.Items.Count - 1;
 
-//  btnSolveClick(nil);
+  btnSolveClick(nil);
 //  Application.Terminate;
   ReportMemoryLeaksOnShutdown := True;
 end;

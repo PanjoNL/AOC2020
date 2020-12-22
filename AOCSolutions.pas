@@ -254,6 +254,13 @@ type
     function SolveB: Variant; override;
   end;
 
+  TAdventOfCodeDay22 = class(TAdventOfCode)
+  private
+    function PlaySpaceCards(Const Recursive: Boolean): integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -2096,6 +2103,123 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay22'}
+function TAdventOfCodeDay22.SolveA: Variant;
+begin
+  Result := PlaySpaceCards(False);
+end;
+
+function TAdventOfCodeDay22.SolveB: Variant;
+begin
+  Result := PlaySpaceCards(True)
+end;
+
+function TAdventOfCodeDay22.PlaySpaceCards(Const Recursive: Boolean): integer;
+
+  function PlayGame(Deck1, Deck2: Tqueue<Integer>): boolean;
+
+    procedure _Distribute(WinnerDeck, LoserDeck: TQueue<Integer>);
+    begin
+      WinnerDeck.Enqueue(WinnerDeck.Dequeue);
+      WinnerDeck.Enqueue(LoserDeck.Dequeue);
+    end;
+
+  Var NewDeck1, NewDeck2: Tqueue<Integer>;
+      Check: TDictionary<String, boolean>;
+      i: integer;
+      CardArray: TArray<Integer>;
+      s: String;
+  begin
+    Check := TDictionary<String, boolean>.Create;
+
+    while (Deck1.Count > 0) and (Deck2.Count > 0) do
+    begin
+      s := '';
+      for i in Deck1.ToArray do
+        s := s+'_'+i.ToString;
+
+      s := s+'|';
+      for i in Deck2.ToArray do
+        s := s+'_'+i.ToString;
+
+      if Check.ContainsKey(s) then
+      begin
+        Check.Free;
+        Exit(True);
+      end;
+      Check.Add(s, true);
+
+      if Recursive and (Deck1.Peek < Deck1.count) and (Deck2.Peek < Deck2.Count) then
+      begin
+        NewDeck1 := Tqueue<integer>.Create;
+        NewDeck2 := Tqueue<integer>.Create;
+
+        CardArray := Deck1.ToArray;
+        for i := 1 to Deck1.Peek do
+          NewDeck1.EnQueue(CardArray[i]);
+
+        CardArray := Deck2.ToArray;
+        for i := 1 to Deck2.Peek do
+          NewDeck2.EnQueue(CardArray[i]);
+
+        if PlayGame(NewDeck1, NewDeck2) then
+          _Distribute(Deck1, Deck2)
+        else
+          _Distribute(Deck2, Deck1);
+
+        NewDeck1.Free;
+        NewDeck2.Free;
+      end
+      else
+      if Deck1.Peek > Deck2.Peek then
+        _Distribute(Deck1, Deck2)
+      else
+        _Distribute(Deck2, Deck1);
+    end;
+
+    Result := Deck2.Count = 0;
+    Check.Free;
+  end;
+
+  function LoadCards(Const PlayerName: String): TQueue<integer>;
+  var i: integer;
+  begin
+    Result := TQueue<Integer>.Create;
+    for i := FInput.IndexOf(PlayerName) + 1 to FInput.Count -1 do
+    begin
+      if FInput[i] = '' then
+        Break;
+
+      Result.Enqueue(StrToInt(FInput[i]));
+    end;
+  end;
+
+Var PlayerOne, PlayerTWo, winner: TQueue<Integer>;
+    s: string;
+    i: Integer;
+begin
+  PlayerOne := LoadCards('Player 1:');
+  PlayerTwo := LoadCards('Player 2:');
+
+  PlayGame(PlayerOne, PlayerTwo);
+
+  winner := PlayerOne;
+  if winner.Count = 0 then
+    winner := playertwo;
+
+  Result := 0;
+  while winner.Count > 0 do
+  begin
+    i := winner.dequeue;
+    Result := Result + (winner.Count + 1) * i;
+  end;
+
+  PlayerOne.Free;
+  PlayerTwo.Free;
+end;
+
+
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -2126,7 +2250,7 @@ initialization
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
     TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
-    TAdventOfCodeDay21]);
+    TAdventOfCodeDay21,TAdventOfCodeDay22]);
 
 end.
 
