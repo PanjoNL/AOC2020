@@ -261,6 +261,29 @@ type
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
+
+  TLinkedCup = class
+  private
+    FValue: Int64;
+    FNextCup: TLinkedCup;
+  public
+    constructor Create(aValue: Int64); reintroduce;
+    function PickUpNextCups: TLinkedCup;
+    procedure Insert(Cup: TLinkedCup);
+
+    property Value: Int64 read FValue;
+    property NextCup: TLinkedCup read FNextCup write FNextCup;
+  end;
+
+  TAdventOfCodeDay23 = class(TAdventOfCode)
+  private
+    function PlayGame(Const Rounds, MaxCups: Integer): TAOCDictionary<Integer,TLinkedCup>;
+    procedure RemoveLinkedCup(Sender: TObject; const Item: TLinkedCup; Action: TCollectionNotification);
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -2195,7 +2218,6 @@ function TAdventOfCodeDay22.PlaySpaceCards(Const Recursive: Boolean): integer;
   end;
 
 Var PlayerOne, PlayerTWo, winner: TQueue<Integer>;
-    s: string;
     i: Integer;
 begin
   PlayerOne := LoadCards('Player 1:');
@@ -2217,9 +2239,106 @@ begin
   PlayerOne.Free;
   PlayerTwo.Free;
 end;
-
-
 {$ENDREGION}
+{$Region 'TLinkedCup'}
+constructor TLinkedCup.Create(aValue: Int64);
+begin
+  FValue := aValue
+end;
+
+procedure TLinkedCup.Insert(Cup: TLinkedCup);
+begin
+  Cup.NextCup.NextCup.NextCup := FNextCup;
+  NextCup := Cup;
+end;
+
+function TLinkedCup.PickUpNextCups: TLinkedCup;
+begin
+  Result := NextCup;
+  Self.NextCup := Result.NextCup.NextCup.NextCup;
+  Result.NextCup.NextCup.NextCup := nil;
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay23'}
+function TAdventOfCodeDay23.SolveA: Variant;
+Var Cups: TAOCDictionary<Integer, TLinkedCup>;
+    Cup: TLinkedCup;
+begin
+  Cups := PlayGame(100, 0);
+  Cup := Cups[1].NextCup;
+  Result := '';
+  while Cup.FValue <> 1 do
+  begin
+    Result := Result + Cup.FValue.ToString;
+    Cup := Cup.NextCup;
+  end;
+  Cups.Free;
+end;
+
+function TAdventOfCodeDay23.SolveB: Variant;
+Var Cup: TLinkedCup;
+    Cups: TAOCDictionary<Integer,TLinkedCup>;
+begin
+  Cups := PlayGame(10000000, 1000000);
+  Cup := Cups[1].NextCup;
+  Result := Cup.FValue * Cup.NextCup.FValue;
+  Cups.Free;
+end;
+
+procedure TAdventofCodeDay23.RemoveLinkedCup(Sender: TObject; const Item: TLinkedCup; Action: TCollectionNotification);
+begin
+  if Action = cnRemoved then
+    Item.Free;
+end;
+
+function TAdventofCodeDay23.PlayGame(Const Rounds, MaxCups: Integer): TAOCDictionary<Integer,TLinkedCup>;
+Var i: Int64;
+    DestinationCup: Integer;
+    Cup, PickedUp: TLinkedCup;
+    Map: TDictionary<Integer,TLinkedCup>;
+begin
+  Result := TAocDictionary<Integer,TLinkedCup>.Create(RemoveLinkedCup);
+  Map := TDictionary<Integer,TLinkedCup>.Create;
+
+  for i := 0 to Length(FInput[0])-1 do
+  begin
+    Cup := TLinkedCup.Create(StrToInt64(FInput[0][i+1]));
+    Map.Add(i, Cup);
+  end;
+
+  for i := Map.Count+1 to MaxCups do
+  begin
+    Cup := TLinkedCup.Create(i);
+    Map.Add(i-1, Cup);
+  end;
+
+  for i in Map.Keys do
+  begin
+    Cup := Map[i];
+    Cup.NextCup := Map[(i+1) mod (Map.Count)];
+    Result.Add(Cup.FValue, Cup);
+  end;
+
+  Cup := Result[StrToInt64(FInput[0][1])];
+  for i := 1 to Rounds do
+  begin
+    PickedUp := Cup.PickUpNextCups;
+    DestinationCup := Cup.FValue -1;
+
+    while (DestinationCup < 1) or (DestinationCup = PickedUp.FValue) or (DestinationCup = PickedUp.NextCup.FValue) or (DestinationCup = PickedUp.NextCup.NextCup.FValue) do
+    begin
+      Dec(DestinationCup);
+      if DestinationCup < 1 then
+        DestinationCup := Result.Count;
+    end;
+
+    Result[DestinationCup].Insert(PickedUp);
+    Cup := Cup.NextCup;
+  end;
+  Map.Free;
+end;
+{$ENDREGION}
+
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -2250,7 +2369,7 @@ initialization
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
     TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
-    TAdventOfCodeDay21,TAdventOfCodeDay22]);
+    TAdventOfCodeDay21,TAdventOfCodeDay22,TAdventOfCodeDay23]);
 
 end.
 
