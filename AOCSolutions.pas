@@ -267,7 +267,8 @@ type
     FValue: Int64;
     FNextCup: TLinkedCup;
   public
-    constructor Create(aValue: Int64); reintroduce;
+    constructor Create(aValue: integer); reintroduce;
+
     function PickUpNextCups: TLinkedCup;
     procedure Insert(Cup: TLinkedCup);
 
@@ -277,8 +278,8 @@ type
 
   TAdventOfCodeDay23 = class(TAdventOfCode)
   private
-    function PlayGame(Const Rounds, MaxCups: Integer): TAOCDictionary<Integer,TLinkedCup>;
-    procedure RemoveLinkedCup(Sender: TObject; const Item: TLinkedCup; Action: TCollectionNotification);
+    function PlayGame(Const Rounds, MaxCups: Integer): TLinkedCup;
+    procedure FreeCups(Cup: TLinkedCup);
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
@@ -2241,7 +2242,7 @@ begin
 end;
 {$ENDREGION}
 {$Region 'TLinkedCup'}
-constructor TLinkedCup.Create(aValue: Int64);
+constructor TLinkedCup.Create(aValue: integer);
 begin
   FValue := aValue
 end;
@@ -2261,65 +2262,58 @@ end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay23'}
 function TAdventOfCodeDay23.SolveA: Variant;
-Var Cups: TAOCDictionary<Integer, TLinkedCup>;
-    Cup: TLinkedCup;
+Var Cup: TLinkedCup;
 begin
-  Cups := PlayGame(100, 0);
-  Cup := Cups[1].NextCup;
+  Cup := PlayGame(100, Length(FInput[0])).NextCup;
+
   Result := '';
-  while Cup.FValue <> 1 do
+  while Cup.Value <> 1 do
   begin
-    Result := Result + Cup.FValue.ToString;
+    Result := Result + Cup.Value.ToString;
     Cup := Cup.NextCup;
   end;
-  Cups.Free;
+  FreeCups(Cup);
 end;
 
 function TAdventOfCodeDay23.SolveB: Variant;
 Var Cup: TLinkedCup;
-    Cups: TAOCDictionary<Integer,TLinkedCup>;
 begin
-  Cups := PlayGame(10000000, 1000000);
-  Cup := Cups[1].NextCup;
-  Result := Cup.FValue * Cup.NextCup.FValue;
-  Cups.Free;
+  Cup := PlayGame(10000000, 1000000).NextCup;
+  Result := Cup.Value * Cup.NextCup.Value;
+  FreeCups(Cup);
 end;
 
-procedure TAdventofCodeDay23.RemoveLinkedCup(Sender: TObject; const Item: TLinkedCup; Action: TCollectionNotification);
+procedure TAdventofCodeDay23.FreeCups(Cup: TLinkedCup);
+Var Cup2: TLinkedCup;
 begin
-  if Action = cnRemoved then
-    Item.Free;
+  Cup2 := Cup.NextCup;
+  Cup.NextCup := nil;
+  Cup2.Free;
 end;
 
-function TAdventofCodeDay23.PlayGame(Const Rounds, MaxCups: Integer): TAOCDictionary<Integer,TLinkedCup>;
-Var i: Int64;
-    DestinationCup: Integer;
+function TAdventofCodeDay23.PlayGame(Const Rounds, MaxCups: Integer): TLinkedCup;
+Var InputLength, PrevCup, DestinationCup, i: Integer;
     Cup, PickedUp: TLinkedCup;
-    Map: TDictionary<Integer,TLinkedCup>;
+    cups: Array of TLinkedCup;
 begin
-  Result := TAocDictionary<Integer,TLinkedCup>.Create(RemoveLinkedCup);
-  Map := TDictionary<Integer,TLinkedCup>.Create;
+  InputLength := Length(FInput[0]);
+  SetLength(cups, MaxCups+1);
 
-  for i := 0 to Length(FInput[0])-1 do
+  PrevCup := -1;
+  for i := 1 to MaxCups do
   begin
-    Cup := TLinkedCup.Create(StrToInt64(FInput[0][i+1]));
-    Map.Add(i, Cup);
+    if i <= InputLength then
+      Cup := TLinkedCup.Create(StrToInt(FInput[0][i]))
+    else
+      Cup := TLinkedCup.Create(i);
+    Cups[Cup.FValue] := Cup;
+    if PrevCup > 0 then
+      Cups[PrevCup].NextCup := cup;
+    PrevCup := Cup.Value;
   end;
 
-  for i := Map.Count+1 to MaxCups do
-  begin
-    Cup := TLinkedCup.Create(i);
-    Map.Add(i-1, Cup);
-  end;
-
-  for i in Map.Keys do
-  begin
-    Cup := Map[i];
-    Cup.NextCup := Map[(i+1) mod (Map.Count)];
-    Result.Add(Cup.FValue, Cup);
-  end;
-
-  Cup := Result[StrToInt64(FInput[0][1])];
+  Cup := Cups[StrToInt64(FInput[0][1])];
+  cups[PrevCup].NextCup := Cup;
   for i := 1 to Rounds do
   begin
     PickedUp := Cup.PickUpNextCups;
@@ -2329,13 +2323,14 @@ begin
     begin
       Dec(DestinationCup);
       if DestinationCup < 1 then
-        DestinationCup := Result.Count;
+        DestinationCup := MaxCups;
     end;
 
-    Result[DestinationCup].Insert(PickedUp);
+    Cups[DestinationCup].Insert(PickedUp);
     Cup := Cup.NextCup;
   end;
-  Map.Free;
+
+  Result := cups[1]
 end;
 {$ENDREGION}
 

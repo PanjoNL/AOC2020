@@ -19,6 +19,8 @@ type TAdventOfCode = class(TPersistent)
     procedure BeforeSolve; virtual;
     procedure AfterSolve; virtual;
     function SaveFilePath: String;
+    function QueryPerformanceToMicroSeconds(Const Delta: Int64): Int64;
+    procedure WriteTimeToDebug(Const aFunctionName: string; Const aTime: Int64);
   private
     function InputFilePath: string;
     function MakeFilePath(const aFileName: String): string;
@@ -26,9 +28,7 @@ type TAdventOfCode = class(TPersistent)
     procedure DoProcedure(ProcedureToRun: TProcedureToRun; const aDisplayName: String);
     function DoFunction(FuntionToRun: TFunctionToRun; const aDisplayName: string; Out MicroSecondsTaken: Int64): String;
     procedure LoadInput;
-    procedure WriteTimeToDebug(Const aFunctionName: string; Const aTime: Int64);
     procedure InternalSolve(Out SolutionA, SolutionB: string; out TimeA, TimeB: Int64);
-    function QueryPerformanceToMicroSeconds(Const Delta: Int64): Int64;
   public
   { Public declarations }
     procedure Solve;
