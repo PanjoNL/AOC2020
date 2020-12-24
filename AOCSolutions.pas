@@ -262,24 +262,9 @@ type
     function SolveB: Variant; override;
   end;
 
-  TLinkedCup = class
-  private
-    FValue: Int64;
-    FNextCup: TLinkedCup;
-  public
-    constructor Create(aValue: integer); reintroduce;
-
-    function PickUpNextCups: TLinkedCup;
-    procedure Insert(Cup: TLinkedCup);
-
-    property Value: Int64 read FValue;
-    property NextCup: TLinkedCup read FNextCup write FNextCup;
-  end;
-
   TAdventOfCodeDay23 = class(TAdventOfCode)
   private
-    function PlayGame(Const Rounds, MaxCups: Integer): TLinkedCup;
-    procedure FreeCups(Cup: TLinkedCup);
+    function PlayGame(Const Rounds, MaxCups: Integer): TArray<Integer>;
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
@@ -2164,7 +2149,7 @@ function TAdventOfCodeDay22.PlaySpaceCards(Const Recursive: Boolean): integer;
 
   Var NewDeck1, NewDeck2: Tqueue<Integer>;
       Check: TDictionary<String, boolean>;
-      i: integer;
+      i, Max1, Max2: integer;
       CardArray: TArray<Integer>;
       s: String;
   begin
@@ -2192,15 +2177,23 @@ function TAdventOfCodeDay22.PlaySpaceCards(Const Recursive: Boolean): integer;
         NewDeck1 := Tqueue<integer>.Create;
         NewDeck2 := Tqueue<integer>.Create;
 
+        Max1 := 0;
         CardArray := Deck1.ToArray;
         for i := 1 to Deck1.Peek do
+        begin
+          Max1 := Max(Max1, CardArray[i]);
           NewDeck1.EnQueue(CardArray[i]);
+        end;
 
+        Max2 := 0;
         CardArray := Deck2.ToArray;
         for i := 1 to Deck2.Peek do
+        begin
           NewDeck2.EnQueue(CardArray[i]);
+          Max2 := Max(Max2, CardArray[i]);
+        end;
 
-        if PlayGame(NewDeck1, NewDeck2) then
+        if (Max1 > Max2) or PlayGame(NewDeck1, NewDeck2) then
           _Distribute(Deck1, Deck2)
         else
           _Distribute(Deck2, Deck1);
@@ -2255,99 +2248,80 @@ begin
   PlayerTwo.Free;
 end;
 {$ENDREGION}
-{$Region 'TLinkedCup'}
-constructor TLinkedCup.Create(aValue: integer);
-begin
-  FValue := aValue
-end;
-
-procedure TLinkedCup.Insert(Cup: TLinkedCup);
-begin
-  Cup.NextCup.NextCup.NextCup := FNextCup;
-  NextCup := Cup;
-end;
-
-function TLinkedCup.PickUpNextCups: TLinkedCup;
-begin
-  Result := NextCup;
-  Self.NextCup := Result.NextCup.NextCup.NextCup;
-  Result.NextCup.NextCup.NextCup := nil;
-end;
-{$ENDREGION}
 {$Region 'TAdventOfCodeDay23'}
 function TAdventOfCodeDay23.SolveA: Variant;
-Var Cup: TLinkedCup;
+Var Cups: TArray<Integer>;
+    Cup: Integer;
 begin
-  Cup := PlayGame(100, Length(FInput[0])).NextCup;
-
+  Cups := PlayGame(100, Length(FInput[0]));
+  Cup := Cups[1];
   Result := '';
-  while Cup.Value <> 1 do
+  while Cup <> 1 do
   begin
-    Result := Result + Cup.Value.ToString;
-    Cup := Cup.NextCup;
+    Result := Result + Cup.ToString;
+    Cup := Cups[Cup];
   end;
-  FreeCups(Cup);
 end;
 
 function TAdventOfCodeDay23.SolveB: Variant;
-Var Cup: TLinkedCup;
+Var Cups: TArray<Integer>;
 begin
-  Cup := PlayGame(10000000, 1000000).NextCup;
-  Result := Cup.Value * Cup.NextCup.Value;
-  FreeCups(Cup);
+  Cups := PlayGame(10000000, 1000000);
+  Result := Int64(Cups[1] * Int64(Cups[Cups[1]]));
 end;
 
-procedure TAdventofCodeDay23.FreeCups(Cup: TLinkedCup);
-Var Cup2: TLinkedCup;
+function TAdventofCodeDay23.PlayGame(Const Rounds, MaxCups: Integer): TArray<Integer>;
+Var PrevCup, DestinationCup, i, CurrentCup, Cup, Pickup1, Pickup2, Pickup3: integer;
 begin
-  Cup2 := Cup.NextCup;
-  Cup.NextCup := nil;
-  Cup2.Free;
-end;
+  SetLength(Result, MaxCups+1);
 
-function TAdventofCodeDay23.PlayGame(Const Rounds, MaxCups: Integer): TLinkedCup;
-Var InputLength, PrevCup, DestinationCup, i: Integer;
-    Cup, PickedUp: TLinkedCup;
-    cups: Array of TLinkedCup;
-begin
-  InputLength := Length(FInput[0]);
-  SetLength(cups, MaxCups+1);
-
-  PrevCup := -1;
-  for i := 1 to MaxCups do
+  PrevCup := 1;
+  CurrentCup := 1;
+  for i := 1 to length(FInput[0]) do
   begin
-    if i <= InputLength then
-      Cup := TLinkedCup.Create(StrToInt(FInput[0][i]))
+    Cup := StrToInt(FInput[0][i]);
+    if i = 1 then
+      CurrentCup := Cup
     else
-      Cup := TLinkedCup.Create(i);
-    Cups[Cup.FValue] := Cup;
-    if PrevCup > 0 then
-      Cups[PrevCup].NextCup := cup;
-    PrevCup := Cup.Value;
+      Result[PrevCup] := Cup;
+
+    PrevCup := Cup;
   end;
 
-  Cup := Cups[StrToInt64(FInput[0][1])];
-  cups[PrevCup].NextCup := Cup;
+  for i := length(FInput[0])+1 to MaxCups do
+  begin
+    Result[PrevCup] := i;
+    PrevCup := i;
+  end;
+  Result[PrevCup] := CurrentCup; //Finish the ring;
+
   for i := 1 to Rounds do
   begin
-    PickedUp := Cup.PickUpNextCups;
-    DestinationCup := Cup.FValue -1;
+    //Find the 3 cups to pickup
+    Pickup1 := Result[CurrentCup];
+    Pickup2 := Result[Pickup1];
+    Pickup3 := Result[Pickup2];
 
-    while (DestinationCup < 1) or (DestinationCup = PickedUp.FValue) or (DestinationCup = PickedUp.NextCup.FValue) or (DestinationCup = PickedUp.NextCup.NextCup.FValue) do
-    begin
+    //Link current cup to cup after pickup3
+    Result[CurrentCup] := Result[Pickup3];
+
+    //Find destionaton cup
+    DestinationCup := CurrentCup;
+    repeat
       Dec(DestinationCup);
       if DestinationCup < 1 then
         DestinationCup := MaxCups;
-    end;
+    until (DestinationCup <> Pickup1) and (DestinationCup <> Pickup2) and (DestinationCup <> Pickup3);
 
-    Cups[DestinationCup].Insert(PickedUp);
-    Cup := Cup.NextCup;
+    //Insert the 3 cups
+    Result[Pickup3] := Result[DestinationCup];
+    Result[DestinationCup] := Pickup1;
+
+    CurrentCup := Result[CurrentCup];
   end;
-
-  Result := cups[1]
 end;
 {$ENDREGION}
-{$Region 'TAdventOfCodeDay'}
+{$Region 'TAdventOfCodeDay24'}
 function TAdventOfCodeDay24.SolveA: Variant;
 begin
   Result := LayTiles(0);
