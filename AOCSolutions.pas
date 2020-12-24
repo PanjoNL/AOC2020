@@ -285,6 +285,16 @@ type
     function SolveB: Variant; override;
   end;
 
+  TDirection = (NE, NW, SE, SW, E, W);
+  TAdventOfCodeDay24 = class(TAdventOfCode)
+  private
+    function LayTiles(Const Rounds: Integer): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+
   (*
   TAdventOfCodeDay = class(TAdventOfCode)
   private
@@ -512,24 +522,24 @@ end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay5'}
 procedure TAdventOfCodeDay5.BeforeSolve;
-var s: String;
 
-  function FindValue(Const High: Char; index, stepsize: integer): integer;
+  function FindValue(Const High: Char; Const Line: string; index, stepsize: integer): integer;
   begin
     Result := 0;
     while stepsize > 1 do
     begin
       stepsize := Round(Stepsize/2);
-      if s[index] = High then
+      if Line[index] = High then
         Inc(Result, StepSize);
       Inc(index);
     end;
   end;
 
+var s: String;
 begin
   FSeatIds := TList<integer>.Create;
   for s in FInput do
-    FSeatIds.Add(FindValue('B', 1, 128) * 8 + FindValue('R', 8, 8));
+    FSeatIds.Add(FindValue('B', s, 1, 128) * 8 + FindValue('R', s, 8, 8));
 end;
 
 procedure TAdventOfCodeDay5.AfterSolve;
@@ -714,6 +724,7 @@ end;
 function TAdventOfCodeDay8.SolveB: Variant;
 var Accumulator, i: Integer;
 begin
+  Result := 0;
   for i := 0 to FInput.Count-1 do
     if (Not FInput[i].StartsWith('acc')) and RunProgram(i, Accumulator) then
       Exit(Accumulator); //1016
@@ -768,6 +779,7 @@ var PreviousNumbers: TDictionary<integer, integer>;
 
 var i, CurrentNumber: integer;
 begin
+  Result := 0;
   PreviousNumbers := TDictionary<integer, integer>.Create;
   try
     for i := 0 to FInput.Count-1 do
@@ -791,6 +803,7 @@ end;
 function TAdventOfCodeDay9.SolveB: Variant;
 var i, j, SeenMin, SeenMax, Total, CurrentNumber: Integer;
 begin
+  Result := 0;
   for i := 0 to FInput.Count-1 do
   begin
     Total := 0;
@@ -1697,6 +1710,7 @@ end;
 Destructor TTile.Destroy;
 Var s: TStringList;
 begin
+  inherited;
   for s in TileData.Values do
     s.Free;
   TileData.Free;
@@ -2333,7 +2347,102 @@ begin
   Result := cups[1]
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay'}
+function TAdventOfCodeDay24.SolveA: Variant;
+begin
+  Result := LayTiles(0);
+end;
 
+function TAdventOfCodeDay24.SolveB: Variant;
+begin
+  Result := LayTiles(100);
+end;
+
+function TAdventOfCodeDay24.LayTiles(Const Rounds: Integer): Integer;
+const Directions: array[TDirection] of string = ('ne', 'nw', 'se', 'sw', 'e', 'w');
+      DeltaX: array[TDirection] of integer = (1,1,-1,-1,0,0);
+      DeltaY: array[TDirection] of integer = (1,-1,1,-1,2,-2);
+Var BlackTiles, PendingChanges: TDictionary<TPoint,Boolean>;
+
+  function CountNeighbours(Const aPoint: TPoint): Integer;
+  var Direction: TDirection;
+      Point: TPoint;
+  begin
+    Result := 0;
+    for Direction := Low(TDirection) to High(TDirection) do
+    begin
+      Point := TPoint.Create(aPoint);
+      Point.Offset(DeltaX[Direction], DeltaY[Direction]);
+      if BlackTiles.ContainsKey(Point) then
+        Inc(Result);
+      if Result > 2 then
+        Exit;
+    end;
+  end;
+
+var n, i, OldLength, NewLength :integer;
+    Point, Check: TPoint;
+    s: string;
+    Direction: TDirection;
+    Change: TPair<TPoint, Boolean>;
+begin
+  BlackTiles := TDictionary<TPoint,Boolean>.Create;
+  PendingChanges := TDictionary<TPoint,Boolean>.Create;
+
+  for i := 0 to FInput.Count-1 do
+  begin
+    s := FInput[i];
+    OldLength := Length(s);
+    Point := TPoint.Zero;
+    for Direction := Low(TDirection) to High(TDirection) do
+    begin
+      s := s.Replace(Directions[Direction], '');
+      NewLength := Length(s);
+      n := (OldLength - NewLength) div Length(Directions[Direction]);
+      Point.Offset(n*DeltaX[Direction], n*DeltaY[Direction]);
+      OldLength := NewLength;
+    end;
+
+    if BlackTiles.ContainsKey(Point) then
+      BlackTiles.Remove(Point)
+    else
+      BlackTiles.Add(Point, true);
+  end;
+
+  for i := 1 to Rounds do
+  begin
+    PendingChanges.Clear;
+
+    for Point in BlackTiles.Keys do
+    begin
+      n := CountNeighbours(Point);
+      if ((n = 0) or (n > 2)) then
+        PendingChanges.Add(Point, False);
+
+      for Direction := Low(TDirection) to High(TDirection) do
+      begin
+        Check := TPoint.Create(Point);
+        Check.Offset(DeltaX[Direction], DeltaY[Direction]);
+        if BlackTiles.ContainsKey(check) or PendingChanges.ContainsKey(Check) then //ignore black tiles or pending changes
+          Continue;
+
+        if CountNeighbours(Check) = 2 then
+          PendingChanges.Add(Check, True);
+      end;
+    end;
+
+    for Change in PendingChanges do
+      if Change.Value then
+        BlackTiles.Add(Change.Key, true)
+      else
+        BlackTiles.remove(Change.Key);
+  end;
+
+  Result := BlackTiles.Count;
+  BlackTiles.Free;
+  PendingChanges.Free;
+end;
+{$ENDREGION}
 
 (*
 //{$Region 'TAdventOfCodeDay'}
@@ -2364,7 +2473,7 @@ initialization
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
     TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
-    TAdventOfCodeDay21,TAdventOfCodeDay22,TAdventOfCodeDay23]);
+    TAdventOfCodeDay21,TAdventOfCodeDay22,TAdventOfCodeDay23,TAdventOfCodeDay24]);
 
 end.
 
