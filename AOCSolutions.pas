@@ -280,12 +280,9 @@ type
   end;
 
   TAdventOfCodeDay25 = class(TAdventOfCode)
-  private
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
-    procedure BeforeSolve; override;
-    procedure AfterSolve; override;
   end;
 
 implementation
@@ -1225,28 +1222,31 @@ begin
 end;
 
 function TAdventOfCodeDay15.PlayMemoryGame(Const Rounds: Integer): Integer;
-Var MostRecentSpoken, PreviousSpoken: Array of integer;
+Var Spoken: Array of Int64;
     i, NumberSpoken, PrevNumber: integer;
     Split: TStringDynArray;
 begin
-  SetLength(MostRecentSpoken, Rounds);
-  SetLength(PreviousSpoken, Rounds);
+  SetLength(Spoken, Rounds);
   Split := SplitString(FInput[0],',');
 
-  i := 0;
   PrevNumber := -1;
   NumberSpoken := 0;
+  for i := 0 to Length(Split) -1 do
+  begin
+    NumberSpoken := StrToInt(Split[i]);
+    Spoken[NumberSpoken] := i + 1;
+    PrevNumber := NumberSpoken;
+  end;
+
+  i := Length(Split);
   while i < Rounds do
   begin
     NumberSpoken := 0;
-    if i < (Length(split)) then //Read from inputfile
-      NumberSpoken := StrToInt(Split[i mod (Length(Split))])
-    else if PreviousSpoken[PrevNumber] > 0 then
-      NumberSpoken := MostRecentSpoken[PrevNumber] - PreviousSpoken[PrevNumber];
+    if Spoken[PrevNumber] shr 32 > 0 then
+      NumberSpoken := Spoken[PrevNumber] - Spoken[PrevNumber] shr 32;
 
     Inc(i);
-    PreviousSpoken[NumberSpoken] := MostRecentSpoken[NumberSpoken];
-    MostRecentSpoken[NumberSpoken] := i;
+    Spoken[NumberSpoken] := Spoken[NumberSpoken] shl 32 + i;
     PrevNumber := NumberSpoken
   end;
 
@@ -2415,21 +2415,10 @@ begin
 end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay25'}
-procedure TAdventOfCodeDay25.BeforeSolve;
-var s: String;
-begin
-
-end;
-
-procedure TAdventOfCodeDay25.AfterSolve;
-begin
-
-end;
-
 function TAdventOfCodeDay25.SolveA: Variant;
 Const Subject: integer = 7;
       DivideBy: integer = 20201227;
-Var i, PublicKeyCard, PublicKeyDoor, Value: integer;
+Var PublicKeyCard, PublicKeyDoor, Value: integer;
 begin
   PublicKeyCard := StrToInt(FInput[0]);
   PublicKeyDoor := StrToInt(FInput[1]);
