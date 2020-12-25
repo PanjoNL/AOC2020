@@ -279,9 +279,7 @@ type
     function SolveB: Variant; override;
   end;
 
-
-  (*
-  TAdventOfCodeDay = class(TAdventOfCode)
+  TAdventOfCodeDay25 = class(TAdventOfCode)
   private
   protected
     function SolveA: Variant; override;
@@ -289,7 +287,6 @@ type
     procedure BeforeSolve; override;
     procedure AfterSolve; override;
   end;
-*)
 
 implementation
 
@@ -2417,37 +2414,46 @@ begin
   PendingChanges.Free;
 end;
 {$ENDREGION}
-
-(*
-//{$Region 'TAdventOfCodeDay'}
-procedure TAdventOfCodeDay.BeforeSolve;
+{$Region 'TAdventOfCodeDay25'}
+procedure TAdventOfCodeDay25.BeforeSolve;
 var s: String;
 begin
 
 end;
 
-procedure TAdventOfCodeDay.AfterSolve;
+procedure TAdventOfCodeDay25.AfterSolve;
 begin
 
 end;
 
-function TAdventOfCodeDay.SolveA: Variant;
+function TAdventOfCodeDay25.SolveA: Variant;
+Const Subject: integer = 7;
+      DivideBy: integer = 20201227;
+Var i, PublicKeyCard, PublicKeyDoor, Value: integer;
 begin
+  PublicKeyCard := StrToInt(FInput[0]);
+  PublicKeyDoor := StrToInt(FInput[1]);
 
+  Value := 1;
+  Result := 1;
+  repeat
+    Value := (Value * Subject) mod DivideBy;
+    Result := int64(Result * PublicKeyDoor) mod DivideBy;
+  until (Value = PublicKeyCard);
 end;
 
-function TAdventOfCodeDay.SolveB: Variant;
+function TAdventOfCodeDay25.SolveB: Variant;
 begin
-
+  Result := 'Done!';
 end;
-//{$ENDREGION}
-*)
+{$ENDREGION}
+
 initialization
   RegisterClasses([TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9, TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
     TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
-    TAdventOfCodeDay21,TAdventOfCodeDay22,TAdventOfCodeDay23,TAdventOfCodeDay24]);
+    TAdventOfCodeDay21,TAdventOfCodeDay22,TAdventOfCodeDay23,TAdventOfCodeDay24,TAdventOfCodeDay25]);
 
 end.
 
