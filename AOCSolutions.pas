@@ -453,25 +453,42 @@ end;
 
 function TAdventOfCodeDay4.IsValidPassport(Const ValidateData: boolean; pp: TDictionary<string,string>): Boolean;
 
+  function InStrArray(Const s: string; aArray: Array of string): boolean;
+  begin
+    Result := IndexText(s, aArray) >= 0;
+  end;
+
   function _CheckHcl(aHcl: string): boolean ;
+  const ValidHCLValues: array[0..15] of string = ('a','b','c','d','e','f','1','2','3','4','5','6','7','8','9','0');
   var i: Integer;
   begin
     Result := aHcl.StartsWith('#') and (Length(aHcl) = 7);
 
     for i := 2 to 7 do
-      if pos(aHcl[i], 'abcdef1234567890') = 0 then
+      if not InStrArray(aHcl[i], ValidHCLValues) then
         exit(false)
   end;
 
   function _CheckEcl(aEcl: string): Boolean;
+  Const ValidECLValues: Array[0..6] of string = ('amb', 'blu', 'brn', 'gry', 'grn', 'hzl', 'oth');
   begin
-    Result := (aEcl = 'amb')
-           or (aEcl = 'blu')
-           or (aEcl = 'brn')
-           or (aEcl = 'gry')
-           or (aEcl = 'grn')
-           or (aEcl = 'hzl')
-           or (aEcl = 'oth');
+    Result := InStrArray(aEcl, ValidECLValues);
+  end;
+
+  function _CheckIntValue(Const aIntValue: string; Const aMin, aMax: integer): boolean;
+  var i: integer;
+  begin
+    Result := TryStrToInt(aIntValue, i) and (i >= aMin) and (i <= aMax);
+  end;
+
+  function _ChechHgt(aHgt: string): boolean;
+  begin
+    if aHgt.EndsWith('cm') then
+      Result := _CheckIntValue(LeftStr(aHgt, 3), 150, 193)
+    else if aHgt.EndsWith('in') then
+      Result := _CheckIntValue(LeftStr(aHgt, 2), 59, 76)
+    else
+      Result := False;
   end;
 
 var temp: integer;
@@ -487,30 +504,27 @@ begin
   if (Not ValidateData) or (not Result) then
     Exit;
 
-  Result := ((TryStrToInt(pp['byr'], temp) and (temp >= 1920) and (temp <= 2002))
-        and  (TryStrToInt(pp['iyr'], temp) and (temp >= 2010) and (temp <= 2020))
-        and  (TryStrToInt(pp['eyr'], temp) and (temp >= 2020) and (temp <= 2030))
-        and(
-            (pp['hgt'].EndsWith('cm') and TryStrToInt(LeftStr(pp['hgt'], 3), temp) and (Temp >= 150) and (temp <= 193))
-         or (pp['hgt'].EndsWith('in') and TryStrToInt(LeftStr(pp['hgt'], 2), temp) and (Temp >= 59) and (temp <= 76))
-           )
-        and (_CheckHcl(pp['hcl']))
-        and (_CheckEcl(pp['ecl']))
-        and (Length(pp['pid'])= 9) and (TryStrToInt(pp['pid'], temp)));
+  Result := _CheckIntValue(pp['byr'], 1920, 2002)
+        and _CheckIntValue(pp['iyr'], 2010, 2020)
+        and _CheckIntValue(pp['eyr'], 2020, 2030)
+        and _ChechHgt(pp['hgt'])
+        and _CheckHcl(pp['hcl'])
+        and _CheckEcl(pp['ecl'])
+        and (Length(pp['pid'])= 9) and (TryStrToInt(pp['pid'], temp))
+
 end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay5'}
 procedure TAdventOfCodeDay5.BeforeSolve;
 
-  function FindValue(Const High: Char; Const Line: string; index, stepsize: integer): integer;
+  function _SeatId(Const aBoardingPass: string): integer;
+  var i: integer;
   begin
     Result := 0;
-    while stepsize > 1 do
+    for i := 1 to length(aBoardingPass) do
     begin
-      stepsize := Round(Stepsize/2);
-      if Line[index] = High then
-        Inc(Result, StepSize);
-      Inc(index);
+      Result := Result shl 1;
+      Result := Result + ifthen(IndexText(aBoardingPass[i], ['b', 'r']) < 0, 0, 1);
     end;
   end;
 
@@ -518,7 +532,7 @@ var s: String;
 begin
   FSeatIds := TList<integer>.Create;
   for s in FInput do
-    FSeatIds.Add(FindValue('B', s, 1, 128) * 8 + FindValue('R', s, 8, 8));
+    FSeatIds.Add(_SeatId(s));
 end;
 
 procedure TAdventOfCodeDay5.AfterSolve;
